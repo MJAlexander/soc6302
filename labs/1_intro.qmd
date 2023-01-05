@@ -1,0 +1,315 @@
+---
+title: "Week 1: Intro to R"
+author: "Monica Alexander and Aida Parnia"
+format: pdf
+editor: visual
+date: "03/01/2023"
+---
+
+# By the end of this lab you should know
+
+-   The different panes in RStudio and what they do
+-   How to open and make a new Quarto file
+-   The different parts of an Quarto file
+-   How to add an R chunk to an Quarto file and execute the code
+-   How to render a Quarto file
+-   Basic R coding:
+    -   standard mathematical operations
+    -   assigning values to objects
+    -   types of of variables
+    -   checking if variables or numeric values are equal, greater than or less than a number
+    -   different types of objects
+    -   what a function is and some important functions
+-   How to search for help on an R function
+-   How to install and load an R package
+
+# Introduction
+
+## A note about folder structure and saving files
+
+During this course you will be downloading and saving a lot of different files. To make it easy to find everything, I would suggest creating a folder called "soc252" and then within that folder have a "data" folder, "labs" folder and "slides" folder where you save the relevant files.
+
+## RStudio
+
+RStudio has four different panes
+
+1.  The top left is the source pane: this is where the files that you will edit are loaded
+2.  The bottom left is the console. This pane shows R code that is executed
+3.  The top right is the environment and history. This shows the variables, datasets and other objects that have been loaded into the R environment, and the history of R code/commands that have been executed.
+4.  The bottom right shows the files in your current folder, plots, packages loaded, and the help files.
+
+## Different parts of an Quarto file
+
+An Quarto file allows you to type free text and embed R code in the one document. The main parts of an Quarto file are
+
+-   the YAML: this is the bit at the top of the document surrounded by dashes. The YAML tells Markdown information like: what the title and date is, who the author is, and what the Markdown file should be render as (in this case, a pdf document).
+-   Headings: lines starting with \# or \## or \### etc, with the text colored in blue. One \# is a main heading, two \## is a sub-heading, etc
+-   Free text, like what this text is. Note that when the document is rendered, some formatting is applied. (you will notice that these lines that start with a - will be formatted as bullet points)
+-   You can view in either 'Source' mode, which shows no formatting, or 'Visual' model, which gives you an idea of the document formatting
+-   R chunks, shown in gray, like the one below.
+    -   to add an R chunk, go to the menu above this pane and click Insert --\> R
+    -   to execute the code within the chunk, click the green play button on the right hand side of the chunk. Once you do this below, you should see the output (4) below the chunk
+    -   Alternatively, you can execute the code by going to Run --\> current chunk in the menu above, making sure your cursor is within the code chunk
+    -   note that lines that start with a \# within an R chunk are comments
+    -   to just execute one line, select that link and go Run --\> Selected line (or Cmd+return on a Mac or Ctrl+Enter on Windows)
+
+For a quick guide on codes for Quarto check out this [**summary of basics**](https://quarto.org/docs/authoring/markdown-basics.html). [This document](https://quarto.org/docs/get-started/hello/rstudio.html) is also a useful intro. 
+
+```{r}
+# This is a comment
+2+2
+# Similar to any calculator R is sensitive to the order of operations
+5+(8*2)
+(5+8)*2
+```
+
+## How to render a Quarto file
+
+Above I was going on about 'rendering' the document. This means to compile it to output of a particular format that is more readable or more usual for a document. In our case we are compiling to a pdf. To render this file, click the render button in the menu above. A pdf should pop up, showing a nicely formatted document.
+
+# R basics
+
+Now we're going to go through some basics of R coding.
+
+## Assign values to variables
+
+The chunk above we used R as a simple calculator (2+2) We can also assign **values** to **variables** with the back arrow i.e. `<-`. For example (execute this chunk to see the outcomes)
+
+```{r}
+# assigning the variable x to have a value of 1
+x <- 1
+# assigning the variable y to have a value of 2
+y <- 2
+# print these
+x
+y
+# we can add these together too
+x+y
+```
+
+## Different types of variables
+
+The above variables were numeric. But we can have character strings:
+
+```{r}
+instructor_name <- "Monica Alexander"
+first_name <- "Monica"
+last_name <- "Alexander"
+```
+
+Logical: either TRUE or FALSE
+
+```{r}
+day_is_tuesday <- TRUE
+month_is_april <- FALSE
+```
+
+Factor: this is a character variable that can have an order associated with it (more later)
+
+```{r}
+my_object <- as.factor("pen")
+```
+
+## Different types of objects
+
+Vectors: an object with multiple elements, all of the same type:
+
+```{r}
+# the c() function allows you to create vectors of numbers (or characters)
+z <- c(3,2,3,4)
+z
+z2 <- c("Monday", "Tuesday", "Wednesday")
+z2
+```
+
+Data frames (tibbles):
+
+-   Closest thing to a dataset that we deal with
+-   Each column is a different variable, each row is an observation
+-   Columns (variables) can be different types
+
+More on this later.
+
+## Functions
+
+**Functions** in R are commands that take arguments and do operations to variables/objects. For example, the `paste` function pastes two (or more) strings together:
+
+```{r}
+paste(first_name, last_name)
+paste(first_name, "June", last_name)
+```
+
+*Sidenote*: R is sensitive to capitalization, both in commands and in variable names. For example using `Paste` you would get an error.
+
+Other useful functions:
+
+```{r}
+min(z)
+max(z)
+mean(z)
+length(z)
+is.numeric(x)
+```
+
+## In-class Exercise
+
+Using the codes you learned, write a code that outputs, "your name, program of study" and send the code in the chat during the tutorial.
+
+## Getting help
+
+To see what a function does, and to check the arguments, type a "?" and then the function name, for example:
+
+```{r}
+?paste
+```
+
+Once you execute the code above, you should see that the help file for paste has appeared in the bottom right pane.
+
+## Logical statements
+
+It is useful to check to see if variables or objects are less than, equal to or greater than numbers. Below are some examples. Note that:
+
+-   Equality is two = signs (not one)
+-   Each of these statements returns a **logical** value i.e. TRUE or FALSE
+
+```{r}
+#equals
+x==1
+x==2
+# greater than
+y>1
+x>1
+# greater than or equal to
+x>=1
+# less than
+x<9
+```
+
+# Install tidyverse and load tidyverse
+
+Throughout this course we will be using the tidyverse package a lot. You will need to install it. You can do so by either
+
+-   going to Menu: Tools --\> Install packages --\> type "tidyverse" click Install, or
+-   uncomment the code below and execute:
+
+```{r}
+# install.packages(tidyverse)
+```
+
+Once tidyverse is installed, load it in using the library command:
+
+```{r}
+library(tidyverse)
+```
+
+Side note: commands in code chunks, e.g. use this to suppress messages:
+
+```{r}
+#| message: false
+library(tidyverse)
+```
+
+# Reading in data 
+
+The tidyverse package contains a lot of useful functions. One is `read_csv` function, which allows us to read in data from CSV files. 
+
+We are going to read in the GSS csv file. Note that you might have to change the file path below depending on where you saved the gss file. 
+
+```{r}
+# make sure the file name points to where you've saved the gss file
+# for example, I have it saved in a "data" folder
+gss <- read_csv(file = "../data/gss.csv")
+```
+
+The gss object is a data frame and contains a row for each respondent and a column for each variable in the dataset. The gss object technically is what is called a **tibble** -- this is a weird word and originates from the fact that the guy that made the tidyverse package is from New Zealand and when people from NZ say "table" it sounds like "tibble". 
+
+You can look at the gss file by going to the "Environment" pane and clicking on the table icon next to the gss object, or by typing `View(gss)` into the console. 
+
+You can print out the top rows of the gss object by using `head`
+
+```{r}
+```
+
+We can print the dimensions of the gss object (number of rows and number of columns)
+
+```{r}
+# output of this is a vector of 2 numbers 
+# first number = number of rows
+# second number is the number of columns
+```
+
+# Important functions
+
+This section illustrates some important functions that make manipulating datasets like the gss dataset much easier. 
+
+## `select`
+
+We can select a column from a dataset. For example the code below selects the column with the respondents age:
+
+```{r}
+
+```
+
+## The pipe
+
+Instead of selecting the age column like above, we can make use of the pipe function. This is the |> or %>% notation. It looks funny but it may help to read it as like saying "and then". On a more technical note, it takes the first part of code and *pipes* it into the first argument of the second part and so on. So the code below takes the gss dataset AND THEN selects the age column:
+
+```{r}
+
+```
+
+Notice that the commands above don't save anything. Assign the age column to a new object called `gss_age`
+
+```{r}
+
+```
+
+## `arrange`
+
+The `arrange` function sorts columns from lowest to highest value. So for example we can select the age column then arrange it from smallest to largest number. Note that this involves using the pipe twice (so taking gss AND THEN selecting age AND then arranging age).
+
+```{r}
+
+```
+
+Side note: you need not press enter after each pipe but it helps with readability of the code. 
+
+## `filter`
+
+To filter rows based on some criteria we use the `filter` function. e.g. filter to only include those aged 30 or less:
+
+```{r}
+
+```
+
+Filter takes any logical arguments. If we want to filter by participants who identified as *Female*, we use `==` operator. 
+
+```{r}
+
+```
+
+## `mutate`
+
+We can add columns using the mutate function. For example we may want to add a new column called `age_plus_1` that adds one year to everyone's age:
+
+```{r}
+
+```
+
+## `summarize`
+
+The `summarize` function is used to give summaries of one or more columns of a dataset. For example, we can calculate the mean age of all respondents in the gss:
+
+```{r}
+
+```
+
+
+# Review questions
+
+1. Create a new R Markdown file for these review questions
+2. Find the mean age at first birth (age_at_first_birth) of respondents in the GSS
+3. Create a new dataset that just contains GSS respondents who are less than 20 years old. 
+4. How many rows does the dataset in step 4 have?
+5. What is the largest case id in the dataset in step 3?
+
