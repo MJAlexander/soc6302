@@ -1,0 +1,40 @@
+---
+title: "Installing R and RStudio"
+author: "Monica Alexander"
+format: pdf
+date: "3 January, 2023"
+editor: visual
+---
+
+In SOC6302 we will be using the statistical programming language R through the RStudio environment. You will need to install both R and RStudio onto your computer. This document describes the steps of installation, and provides a test to make sure everything is working properly.
+
+# Install R
+
+-   Go to http://cran.utstat.utoronto.ca/
+-   Select the download link that is relevant to you: if you have a Mac, select "Download R for (Mac) OS X", if you have a Windows machine, select "Download R for Windows".
+-   If you have a Mac, click on the "R-4.2.1pkg" link. If you have a Windows machine, click on the "base" link, then click on the "Download R 4.2.1 for Windows" link.
+-   Open the downloaded file and follow the install instructions on your machine.
+
+# Install RStudio
+
+-   Go to https://posit.co/download/rstudio-desktop/
+-   Scroll down and click the "Download" under step 2 (it will either say for Mac or Windows)
+-   Open the downloaded file and follow the install instructions on your machine.
+
+# Install tinytex
+
+You may need to install a TeX distribution (you probably will). If you're not sure if you have one, go to the next step ("Check everything worked by knitting a Quarto document"), and if it doesn't work, you will need to install tinytex.
+
+1.  Open RStudio
+2.  Click in the Console window (on the left)
+3.  Type `install.packages('tinytex')` after the `>` and press return
+4.  Type `tinytex::install_tinytex()` after the `>` and press return
+
+# Check everything worked by knitting a Quarto document
+
+1.  Open RStudio
+2.  click the picture of the document with a green cross in the top left hand side
+3.  Select Quarto Document
+4.  Select PDF and press Create
+5.  Go File \> Save and save the document
+6.  In the Menu bar above the document, click "Render". This should result in a PDF document.
