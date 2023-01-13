@@ -27,7 +27,7 @@ library(here)
 Instructor: Monica Alexander (she/her)
 
 - Email: monica.alexander@utoronto.ca
-- Office hours: TBA
+- Office hours: Fridays 2-3pm, 700 University Avenue Level 9 Room 9135
 
 TA: Aida Parnia (she/her) 
 
@@ -201,19 +201,19 @@ Example research questions could include
 - Where should armor go?
 - Can you think of other examples?
 
-## 
+<!-- ##  -->
 
-\begin{figure}
-\centering
-\includegraphics[width = 0.7\textwidth]{../fig/house.jpeg}
-\end{figure}
+<!-- \begin{figure} -->
+<!-- \centering -->
+<!-- \includegraphics[width = 0.7\textwidth]{../fig/house.jpeg} -->
+<!-- \end{figure} -->
 
-## 
+<!-- ##  -->
 
-\begin{figure}
-\centering
-\includegraphics[width = 0.5\textwidth]{../fig/survivorship_bias_2x.png}
-\end{figure}
+<!-- \begin{figure} -->
+<!-- \centering -->
+<!-- \includegraphics[width = 0.5\textwidth]{../fig/survivorship_bias_2x.png} -->
+<!-- \end{figure} -->
 
 
 # Review
@@ -763,4 +763,3 @@ IQR(x)
     + Don't expect you will be able to code for memory to start off with
     + Think about what you want to do and then if you don't know how to do it, Google key terms 
     + Googling errors is also very helpful
-    + I mostly learned R from the formidable teacher, Stack Overflow

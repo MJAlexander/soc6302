@@ -58,8 +58,10 @@ dr |>
   tally()
 
 dr <- dr |> 
-  mutate(geo_prv = str_to_lower(as_factor(geo_prv)))
+  mutate(geo_prv = str_to_lower(as_factor(geo_prv))) 
 
+dr <- dr |> 
+  mutate(across(c(dhh_sex:gendvswl, smkdvsty:incdghh, ccc_005:drgdvlac, lbfdvwss:sdcdvfls), as_factor)) 
 
 dr |> 
   group_by(dhhgage) |> 

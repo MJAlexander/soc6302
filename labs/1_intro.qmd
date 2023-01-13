@@ -3,7 +3,6 @@ title: "Week 1: Intro to R"
 author: "Monica Alexander and Aida Parnia"
 format: pdf
 editor: visual
-date: "03/01/2023"
 ---
 
 # By the end of this lab you should know
@@ -27,7 +26,20 @@ date: "03/01/2023"
 
 ## A note about folder structure and saving files
 
-During this course you will be downloading and saving a lot of different files. To make it easy to find everything, I would suggest creating a folder called "soc252" and then within that folder have a "data" folder, "labs" folder and "slides" folder where you save the relevant files.
+During this course you will be downloading and saving a lot of different files. Sometimes it can be hard to find evertthing. To make it easy to find everything, I would suggest creating a folder called "soc6302" and then within that folder have a "data" folder, "labs" folder and "slides" folder where you save the relevant files.
+
+## Added bonus: R Projects
+
+RStudio projects are associated with R working directories. They are good to use for several reasons:
+
+- Each project has their own working directory, so make dealing with file paths easier
+- Make it easy to divide your work into multiple contexts
+- Can open multiple projects at one time in separate windows
+
+To make a new project in RStudio, go to File --> New Project. If you've already set up a repo for this class, then select 'Existing Directory' and choose the folder that will contain all your class materials. This will open a new RStudio window, that will be called the name of your folder. 
+
+In future, when you want to do work for this class, go to your class folder and open the .Rproj file. This will open an RStudio window, with the correct working directory, and show the files you were last working on. 
+
 
 ## RStudio
 
@@ -53,7 +65,7 @@ An Quarto file allows you to type free text and embed R code in the one document
     -   note that lines that start with a \# within an R chunk are comments
     -   to just execute one line, select that link and go Run --\> Selected line (or Cmd+return on a Mac or Ctrl+Enter on Windows)
 
-For a quick guide on codes for Quarto check out this [**summary of basics**](https://quarto.org/docs/authoring/markdown-basics.html). [This document](https://quarto.org/docs/get-started/hello/rstudio.html) is also a useful intro. 
+For a quick guide on codes for Quarto check out this [**summary of basics**](https://quarto.org/docs/authoring/markdown-basics.html). [This document](https://quarto.org/docs/get-started/hello/rstudio.html) is also a useful intro.
 
 ```{r}
 # This is a comment
@@ -209,11 +221,11 @@ Side note: commands in code chunks, e.g. use this to suppress messages:
 library(tidyverse)
 ```
 
-# Reading in data 
+# Reading in data
 
-The tidyverse package contains a lot of useful functions. One is `read_csv` function, which allows us to read in data from CSV files. 
+The tidyverse package contains a lot of useful functions. One is `read_csv` function, which allows us to read in data from CSV files.
 
-We are going to read in the GSS csv file. Note that you might have to change the file path below depending on where you saved the gss file. 
+We are going to read in the GSS csv file. Note that you might have to change the file path below depending on where you saved the gss file.
 
 ```{r}
 # make sure the file name points to where you've saved the gss file
@@ -221,9 +233,9 @@ We are going to read in the GSS csv file. Note that you might have to change the
 gss <- read_csv(file = "../data/gss.csv")
 ```
 
-The gss object is a data frame and contains a row for each respondent and a column for each variable in the dataset. The gss object technically is what is called a **tibble** -- this is a weird word and originates from the fact that the guy that made the tidyverse package is from New Zealand and when people from NZ say "table" it sounds like "tibble". 
+The gss object is a data frame and contains a row for each respondent and a column for each variable in the dataset. The gss object technically is what is called a **tibble** -- this is a weird word and originates from the fact that the guy that made the tidyverse package is from New Zealand and when people from NZ say "table" it sounds like "tibble".
 
-You can look at the gss file by going to the "Environment" pane and clicking on the table icon next to the gss object, or by typing `View(gss)` into the console. 
+You can look at the gss file by going to the "Environment" pane and clicking on the table icon next to the gss object, or by typing `View(gss)` into the console.
 
 You can print out the top rows of the gss object by using `head`
 
@@ -240,7 +252,7 @@ We can print the dimensions of the gss object (number of rows and number of colu
 
 # Important functions
 
-This section illustrates some important functions that make manipulating datasets like the gss dataset much easier. 
+This section illustrates some important functions that make manipulating datasets like the gss dataset much easier.
 
 ## `select`
 
@@ -252,7 +264,7 @@ We can select a column from a dataset. For example the code below selects the co
 
 ## The pipe
 
-Instead of selecting the age column like above, we can make use of the pipe function. This is the |> or %>% notation. It looks funny but it may help to read it as like saying "and then". On a more technical note, it takes the first part of code and *pipes* it into the first argument of the second part and so on. So the code below takes the gss dataset AND THEN selects the age column:
+Instead of selecting the age column like above, we can make use of the pipe function. This is the \|\> or %\>% notation. It looks funny but it may help to read it as like saying "and then". On a more technical note, it takes the first part of code and *pipes* it into the first argument of the second part and so on. So the code below takes the gss dataset AND THEN selects the age column:
 
 ```{r}
 
@@ -272,7 +284,7 @@ The `arrange` function sorts columns from lowest to highest value. So for exampl
 
 ```
 
-Side note: you need not press enter after each pipe but it helps with readability of the code. 
+Side note: you need not press enter after each pipe but it helps with readability of the code.
 
 ## `filter`
 
@@ -282,7 +294,7 @@ To filter rows based on some criteria we use the `filter` function. e.g. filter 
 
 ```
 
-Filter takes any logical arguments. If we want to filter by participants who identified as *Female*, we use `==` operator. 
+Filter takes any logical arguments. If we want to filter by participants who identified as *Female*, we use `==` operator.
 
 ```{r}
 
@@ -304,12 +316,10 @@ The `summarize` function is used to give summaries of one or more columns of a d
 
 ```
 
-
 # Review questions
 
-1. Create a new R Markdown file for these review questions
-2. Find the mean age at first birth (age_at_first_birth) of respondents in the GSS
-3. Create a new dataset that just contains GSS respondents who are less than 20 years old. 
-4. How many rows does the dataset in step 4 have?
-5. What is the largest case id in the dataset in step 3?
-
+1.  Create a new R Markdown file for these review questions
+2.  Find the mean age at first birth (age_at_first_birth) of respondents in the GSS
+3.  Create a new dataset that just contains GSS respondents who are less than 20 years old.
+4.  How many rows does the dataset in step 4 have?
+5.  What is the largest case id in the dataset in step 3?
