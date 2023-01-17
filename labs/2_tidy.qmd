@@ -1,0 +1,99 @@
+---
+title: "Week 2: Some more tidy stuff"
+author: "SOC6302 Statistics for Sociologists"
+format: 
+  pdf:
+    toc: true
+    number-sections: true
+editor: visual
+---
+
+# Load packages and read in GSS
+
+```{r}
+library(tidyverse)
+gss <- read_csv(file = "../data/gss.csv")
+```
+
+
+
+# Creating your own dataset
+
+Note that you can also create your own dataset using the `tibble` function. Note that each column is defined as a vector:
+
+```{r}
+my_fruit <- tibble(fruit = c("banana", "apple", "pear"),
+                   count = c(2,4,1))
+my_fruit
+```
+
+# More important functions
+
+
+## The `group_by` function
+
+The `group_by` function allows you to get key summary statistics by group (levels of a categorical variable). Use in combination with `summarize` etc
+
+e.g. mean age and standard deviation by marital status in GSS
+
+```{r}
+gss |> 
+  group_by(marital_status) |> 
+  summarize(mean_age = mean(age), 
+            sd_age = sd(age)) |> 
+  arrange(mean_age)
+```
+
+Note that the above table shows the mean and sd of age for when marital status is missing (NA). We may want to remove those. To do this, use the `drop_na` function
+
+```{r}
+gss |> 
+  drop_na(marital_status) |> 
+  group_by(marital_status) |> 
+  summarize(mean_age = mean(age), 
+            sd_age = sd(age)) |> 
+  arrange(mean_age)
+```
+
+# Calculating the correlation coefficient
+
+To calculate the correlation coefficient between two quantitative variables, e.g. age and age at first marriage, use the `summarize` function. Notice that we need to remove rows with any NA values before doing the calculation. We can do this using `drop_na()`
+
+```{r}
+gss |> 
+  select(age, age_at_first_marriage) |> 
+  drop_na() |> 
+  summarise(correlation = cor(age, age_at_first_marriage))
+```
+
+# Counts and proportions
+
+## Counting the number of observations
+
+Often we would like to include counts of observations in particular groups. To do this, use the `tally()` or `count()` function.
+
+e.g. the number of people by province of residence in the GSS
+
+```{r}
+gss |> 
+  group_by(province) |> 
+  tally()
+```
+
+## Getting the proportion in each group
+
+Also often useful to get proportion of total in each group:
+
+```{r}
+gss |> 
+  group_by(province) |> 
+  tally() |> 
+  mutate(prop = n / sum(n))
+```
+
+# Review questions
+
+
+1.  How many respondents were born in Canada?
+2.  What proportion of respondents were born in Canada?
+3.  Calculate respondents mean age by whether or not they were born in Canada

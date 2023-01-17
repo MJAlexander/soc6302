@@ -57,7 +57,7 @@ RStudio has four different panes
 An Quarto file allows you to type free text and embed R code in the one document. The main parts of an Quarto file are
 
 -   the YAML: this is the bit at the top of the document surrounded by dashes. The YAML tells Markdown information like: what the title and date is, who the author is, and what the Markdown file should be render as (in this case, a pdf document).
--   Headings: lines starting with \# or \## or \### etc, with the text colored in blue. One \# is a main heading, two \## is a sub-heading, etc
+-   Headings: lines starting with # or ## or ### etc, with the text colored in blue. One # is a main heading, two ## is a sub-heading, etc
 -   Free text, like what this text is. Note that when the document is rendered, some formatting is applied. (you will notice that these lines that start with a - will be formatted as bullet points)
 -   You can view in either 'Source' mode, which shows no formatting, or 'Visual' model, which gives you an idea of the document formatting
 -   R chunks, shown in gray, like the one below.
@@ -77,6 +77,12 @@ For a quick guide on codes for Quarto check out this [**summary of basics**](htt
 (5+8)*2
 ```
 
+```{r}
+12*(7)
+```
+
+
+
 ## How to render a Quarto file
 
 Above I was going on about 'rendering' the document. This means to compile it to output of a particular format that is more readable or more usual for a document. In our case we are compiling to a pdf. To render this file, click the render button in the menu above. A pdf should pop up, showing a nicely formatted document.
@@ -91,7 +97,10 @@ The chunk above we used R as a simple calculator (2+2) We can also assign **valu
 
 ```{r}
 # assigning the variable x to have a value of 1
+# helping ourselves by commenting code 
 x <- 1
+monica <- 87
+this_number <- 8
 # assigning the variable y to have a value of 2
 y <- 2
 # print these
@@ -99,6 +108,15 @@ x
 y
 # we can add these together too
 x+y
+x*y
+2*x - 3*y
+
+
+# this is my code with sample size
+sample_size <- 110
+
+# squaring
+sample_size^2
 ```
 
 ## Different types of variables
@@ -114,8 +132,11 @@ last_name <- "Alexander"
 Logical: either TRUE or FALSE
 
 ```{r}
-day_is_tuesday <- TRUE
-month_is_april <- FALSE
+day_is_tuesday <- FALSE
+month_is_january <- TRUE
+
+# complement is !
+!day_is_tuesday
 ```
 
 Factor: this is a character variable that can have an order associated with it (more later)
@@ -134,6 +155,10 @@ z <- c(3,2,3,4)
 z
 z2 <- c("Monday", "Tuesday", "Wednesday")
 z2
+
+places_ive_lived <- c("Australia", "USA", "Canada")
+
+places_ive_lived
 ```
 
 Data frames (tibbles):
@@ -149,8 +174,11 @@ More on this later.
 **Functions** in R are commands that take arguments and do operations to variables/objects. For example, the `paste` function pastes two (or more) strings together:
 
 ```{r}
+first_name
+last_name
+
 paste(first_name, last_name)
-paste(first_name, "June", last_name)
+my_full_name <- paste(first_name, "June", last_name)
 ```
 
 *Sidenote*: R is sensitive to capitalization, both in commands and in variable names. For example using `Paste` you would get an error.
@@ -158,11 +186,18 @@ paste(first_name, "June", last_name)
 Other useful functions:
 
 ```{r}
+z
 min(z)
 max(z)
 mean(z)
 length(z)
+
+x
+# check if x is numeric
 is.numeric(x)
+
+# check if x is character
+is.character(x)
 ```
 
 ## In-class Exercise
@@ -222,6 +257,13 @@ Side note: commands in code chunks, e.g. use this to suppress messages:
 #| message: false
 library(tidyverse)
 ```
+
+```{r}
+#| echo: false
+2+2
+```
+
+
 
 # Reading in data
 

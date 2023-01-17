@@ -1,0 +1,491 @@
+---
+title: "SOC6302 Statistics for Sociologists"
+author: "Monica Alexander"
+date: "Week 2: Exploratory Data Analysis I"
+output: 
+  beamer_presentation:
+    slide_level: 2
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, size = '\tiny')
+```
+
+
+
+## Today
+
+- A note on research questions
+- Exploratory Data Analysis: summary measures and tables
+- (Next week: data visualization)
+- Lab: doing summary stats in R
+
+Assignment 1 is posted!
+
+
+# Research questions
+
+## Asking good research questions
+
+A usual first step in social research is formulating your research question. A good research question is
+
+- Clear and focused 
+    + Well-defined
+    + Not too broad or narrow in scope
+- Not too easy or hard to answer
+    + More than yes/no
+    + Is not common knowledge
+- Operationalizable
+    + The relationships/outcomes/effects/patterns are able to be measured and observed
+    
+## Research question
+
+Example from last week's slides: "Say we want to study the relationship between hours studied and job placement for all university students in Canada"
+
+Turn this into a research question: *"What is the relationship between hours studied and job placement for Canadian university students?"*
+
+To make this operationalizable, be more specific about what we're measuring:
+
+- Population of interest: all undergraduate students graduating in 2023 enrolled in Canadian universities
+- Outcome/dependent variable of interest: "job placement" --- got a job requiring degree within 12 months of graduating
+- Main independent variable of interest: average hours per week studying during semesters
+
+## Research question
+
+*"What is the relationship between hours studied and job placement for Canadian university students?"*
+
+This is a good start, but to more fully understand the relationship, we may what to consider other *secondary* research questions (or, sub-questions)
+
+## Research questions
+
+*What is the relationship between hours studied and job placement for Canadian university students?*
+
+- *how does the relationship vary across major?*
+- *is there still a relationship after taking into account for GPA?*
+
+Note: 
+
+1. **bivariate** versus **multivariate** questions
+2. **stratification** versus **control** variables
+
+
+
+# Exploratory Data Analysis (EDA)
+
+## What is EDA and why do we do it?
+
+Before we even do any sort of statistical inference, we need to understand the main characteristics of our dataset. 
+
+- Helps to identify any potential issues or surprising things about our data
+- Helps to check / explore / refine research questions
+
+## What is EDA and why do we do it?
+
+EDA is all about asking: 
+
+- What types of variables do we have?
+- Do we have a complete dataset, or do we have missing data or observations?
+- If we have missing data, is it missing equally across observations of different types or concentrated in particular groups?
+- Are there any obvious outliers or strange data points?
+- What do the data 'look' like? 
+    + summary measures, measures of centrality, spread
+    + Visualizing the data through plots and tables
+    
+## Steps of EDA
+
+1. Become familiar with size of data set (number of observations and variables available)
+2. What kinds of variables are available
+3. For the variables that I'm interested in, are there any missing values or other issues?
+4. What does the distribution/frequency of observations look like for the variables I'm interested in? (summary measures, tables and graphs)
+
+## Summary measures of quantitative data: recap
+
+- **Measures of central tendency**: mean, median, mode
+- **Measures of spread**: range, IQR, variance, standard deviation
+
+## Correlation between two quantitative variables
+
+**Correlation** is the statistical measure of the relationship between two variables. **Pearson's correlation coefficient**, $r_{xy}$ summarizes this relationship into one number. For an observation sample of two random variables $x_1, x_2, \dots, x_n$ and $y_1, y_2, \dots, y_n$, 
+
+$$
+r_{xy} = \frac{\sum^n_{i=1}(x_i - \bar x)(y_i - \bar y)}{\sqrt{\sum^n_{i=1}(x_i - \bar x)^2}\sqrt{\sum^n_{i=1}(y_i - \bar y)^2}}
+$$
+
+## Correlation
+
+$$
+r_{xy} = \frac{\sum^n_{i=1}(x_i - \bar x)(y_i - \bar y)}{\sqrt{\sum^n_{i=1}(x_i - \bar x)^2}\sqrt{\sum^n_{i=1}(y_i - \bar y)^2}}
+$$
+
+## Example
+
+Palmer penguins dataset
+
+\centering
+\includegraphics[width = 0.6\textwidth]{../fig/lter_penguins.png}
+
+\tiny
+
+```{r, echo = FALSE}
+library(palmerpenguins)
+library(tidyverse)
+library(kableExtra)
+d <- palmerpenguins::penguins
+
+d |> select(-year) |> head() |> kable()
+```
+
+
+## Penguins
+
+- Mean flipper length: `r d |> summarize(round(mean(flipper_length_mm, na.rm = TRUE)))`
+- Median flipper length: `r d |> summarize(median(flipper_length_mm, na.rm = TRUE))`
+- Standard deviation flipper length: `r d |> summarize(round(sd(flipper_length_mm, na.rm = TRUE)))`
+- Correlation between flipper length and bill length: `r d |> drop_na() |> summarize(round(cor(flipper_length_mm, bill_length_mm), 2))`
+
+These summary measures for the whole sample. What would also be interesting to calculate?
+
+## Penguins
+
+Mean flipper length by species. (**stratifying** by species)
+
+```{r}
+#| echo: false
+d |> 
+  drop_na() |> 
+  group_by(species) |> 
+  summarize(mean_flipper = round(mean(flipper_length_mm, na.rm = TRUE), 2),
+            sd_flipper = round(sd(flipper_length_mm, na.rm = TRUE),2),
+            corr_flipper_bill = round(cor(flipper_length_mm, bill_length_mm), 2)) |> 
+  kable()
+```
+
+
+## Summary measures of qualitative variables
+
+- If we have qualitative/categorical variables we can't take the mean or calculate standard deviation
+- What to do?
+- Summary measures are based on counting the number of units/elements of interest in each category 
+
+
+## Frequency tables
+
+Counts in each group
+
+
+```{r, echo = FALSE}
+d |> 
+  group_by(species) |> 
+  tally() |> 
+  kable()
+```
+
+
+
+
+## Contingency tables
+
+Two way counts
+
+```{r, echo = FALSE}
+d |> 
+  group_by(species, island) |> 
+  tally() |> 
+  pivot_wider(names_from = "island", values_from = "n") |> 
+  replace_na(list(Biscoe = 0, Dream = 0, Torgersen = 0)) |> 
+  kable()
+```
+
+## Counts to proportions
+
+```{r, echo = FALSE}
+d |> 
+  group_by(species) |> 
+  tally() |> 
+  mutate(proportion = round(n/sum(n), 3)) |> 
+  kable()
+```
+
+## Counts to proportions
+
+Row proportions:
+
+```{r, echo = FALSE}
+d |> 
+  group_by(species, island) |> 
+  tally() |> 
+  group_by(species) |> 
+  mutate(proportion = round(n/sum(n), 2)) |> 
+  select(-n) |> 
+  pivot_wider(names_from = "island", values_from = "proportion") |> 
+  replace_na(list(Biscoe = 0, Dream = 0, Torgersen = 0)) |> 
+  kable()
+```
+
+## Counts to proportions
+
+Column proportions:
+
+```{r, echo = FALSE}
+d |> 
+  group_by(species, island) |> 
+  tally() |> 
+  group_by(island) |> 
+  mutate(proportion = round(n/sum(n), 2)) |> 
+  select(-n) |> 
+  pivot_wider(names_from = "island", values_from = "proportion") |> 
+  replace_na(list(Biscoe = 0, Dream = 0, Torgersen = 0)) |> 
+  kable()
+```
+
+
+## A historical note
+
+- Presenting information in tables may seem obvious to us
+- Quantitative tables first used in 17th century by William Petty and John Graunt. A new science: 'Political Arithmetic'
+- John Graunt: analysis of the London Bills of Mortality 
+
+> "Graunt reduced several great confused Columns into a few perspicuous Tables and underscored the power of tables to bring clarity and conciseness to specific topics"
+
+##
+
+\includegraphics[width = \textwidth]{../fig/graunt_1.png}
+
+
+
+
+
+# EDA Example: TTC subway delays in 2019
+
+## Example: TTC subway delays in 2019
+
+- Data on TTC subway delay times by station and day available from the Open Data Toronto website: https://open.toronto.ca/
+
+```{r, echo = FALSE}
+library(tidyverse)
+library(here)
+delay_2019 <- read_csv(here("data/ttc_delays_2019.csv"))
+```
+
+\includegraphics{../fig/ttc.jpg}
+
+- Let's get to know this dataset
+
+
+## Get familiar with dataset
+
+\tiny
+```{r}
+delay_2019
+```
+
+## Get familiar with dataset
+
+Dimensions (number of rows x number of columns)
+
+
+
+```{r}
+dim(delay_2019)
+```
+
+Variable names
+
+\tiny
+
+```{r}
+colnames(delay_2019)
+```
+
+## Research question?
+
+- What are some good potential research questions with this dataset?
+
+## Sanity checks
+
+We need to check variables should be what they say they are. If they aren't, the natural next question is to what to do with issues (recode? remove?)
+
+E.g. check days of week make sense 
+
+\tiny
+
+```{r}
+delay_2019 |> 
+  select(day) |> 
+  unique()
+```
+
+## Sanity checks
+
+Check lines: oh no. some issues here. Some have obvious recodes, others, not so much. 
+\tiny
+```{r}
+delay_2019 |> 
+  select(line) |> 
+  unique() |> 
+  pull() # turn into a vector for better display
+```
+## Data issues
+
+How bad is the mislabeling of lines? look at frequency of cases
+
+
+\tiny
+
+```{r}
+delay_2019 |> 
+  group_by(line) |> # group by line label
+  tally() |> # count the number of occurrences
+  arrange(-n) # arrange in descending order
+```
+## Missing values
+
+\tiny
+
+```{r}
+delay_2019  |> 
+  summarise(across(everything(), ~ sum(is.na(.x))))
+```
+
+
+<!-- ## Or use the `skimr` package -->
+
+<!-- \tiny  -->
+
+<!-- ```{r, eval = FALSE} -->
+<!-- library(skimr) # install using install.packages("skimr") -->
+<!-- skim(delay_2019) -->
+<!-- ``` -->
+
+<!-- \normalsize -->
+<!-- (Show this in lecture) -->
+
+```{r, echo = FALSE}
+library(janitor)
+delay_2019 <- delay_2019 |> distinct()
+delay_2019 <- delay_2019 |> filter(line %in% c("BD", "YU", "SHP", "SRT")) 
+```
+
+
+## Summary statistics
+
+Most interested in delay minutes, which is the `min_delay` variable
+
+\tiny
+
+```{r}
+delay_2019 |> 
+  summarize(n_obs = n(), 
+            mean_delay = mean(min_delay),
+            median_delay = median(min_delay),
+            range_delay = max(min_delay) - min(min_delay),
+            iqr_delay = IQR(min_delay))
+```
+
+## Summary statistics
+
+Probably more interesting to do these summaries by line (**stratify** by line)
+
+\tiny
+
+```{r}
+delay_2019 |> 
+  group_by(line) |> 
+  summarize(n_obs = n(), 
+            mean_delay = mean(min_delay),
+            median_delay = median(min_delay),
+            range_delay = max(min_delay) - min(min_delay),
+            iqr_delay = IQR(min_delay))
+```
+
+
+## Summaries
+
+Could also stratify by reason for delay
+
+\tiny
+
+```{r}
+delay_2019 |> 
+  group_by(code_desc) |> 
+  summarize(n_obs = n(), 
+            mean_delay = mean(min_delay),
+            median_delay = median(min_delay),
+            range_delay = max(min_delay) - min(min_delay),
+            iqr_delay = IQR(min_delay)) |> 
+  arrange(-n_obs)
+```
+
+## Summaries
+
+Arrange by mean delay time
+
+\tiny
+
+```{r}
+delay_2019 |> 
+  group_by(code_desc) |> 
+  summarize(n_obs = n(), 
+            mean_delay = mean(min_delay),
+            median_delay = median(min_delay),
+            range_delay = max(min_delay) - min(min_delay),
+            iqr_delay = IQR(min_delay)) |> 
+  arrange(-mean_delay) 
+```
+## EDA: summary so far
+
+- There's no one checklist of things to looks at, depends on your data and research question
+- Get familiar with your dataset
+- Check for missing values, and that existing values make sense
+- Summary statistics depend on your research question of interest
+    + quantitative versus qualitative summary measures
+    + stratifying by important characteristics often useful 
+    
+## Preview: visualization
+
+It's so important to plot your data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Imagine we have the following sets of datasets of (x,y) pairs
+
+\tiny
+```{r}
+library(tidyverse)
+library(datasauRus)
+head(datasaurus_dozen)
+```
+
+##
+How many observations?
+
+\tiny
+```{r}
+datasaurus_dozen  %>%  count(dataset)
+```
+##
+
+Do some summaries for each dataset
+
+\tiny
+```{r}
+datasaurus_dozen %>% 
+  group_by(dataset) %>% 
+  summarise(mean_x = mean(x),
+            mean_y = mean(y),
+            correlation = cor(x,y))
+```
+
+## But now let's plot
+
+\tiny
+```{r, echo = FALSE}
+datasaurus_dozen  %>% 
+  filter(dataset %in% c("dino", "star", "away", "bullseye")) %>% 
+  ggplot(aes(x=x, y=y, colour=dataset)) +
+  geom_point() +
+  theme_minimal() +
+  facet_wrap(vars(dataset), nrow = 2, ncol = 2) +
+  labs(colour = "Dataset")
+```
+
+
