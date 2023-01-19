@@ -1,0 +1,859 @@
+---
+title: "SOC6302 Statistics for Sociologists"
+author: "Monica Alexander"
+date: "Week 3: Exploratory Data Analysis II (Data Visualization)"
+output: 
+  beamer_presentation:
+    slide_level: 2
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, size = '\tiny')
+```
+
+## Announcements
+
+
+What we will cover today:
+
+- Data visualization principles
+- Important types of graphs
+
+Assignment 1 is out
+
+
+
+
+# Data visualization
+
+## Plot your data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+- We started to compute some summary statistics above, and showed how summaries can be calculated by group and arranged in different ways to get a sense of differences across groups
+- However, graphing/plotting your data is usually the best way to visualize patterns, trends, outliers, issues and other surprising points
+- The most appropriate types of graph for your data depends on:
+    + the type of variable you are interested in (quantitative or qualitative/categorical)
+    + your research questions
+
+
+## Plot your data!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+- Before you start to do any statistical analysis, you should always plot your data
+- Data visualization is a key part of EDA and essential in understanding the assumptions and outcomes of your eventual statistical analysis
+
+## Plot your data!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Here's a specific example. Imagine we have the following sets of datasets of (x,y) pairs
+
+\tiny
+```{r}
+library(tidyverse)
+library(datasauRus)
+head(datasaurus_dozen)
+```
+
+##
+How many observations?
+
+\tiny
+```{r}
+datasaurus_dozen  %>%  count(dataset)
+```
+##
+
+Do some summaries for each dataset
+
+\tiny
+```{r}
+datasaurus_dozen %>% 
+  group_by(dataset) %>% 
+  summarise(mean_x = mean(x),
+            mean_y = mean(y),
+            correlation = cor(x,y))
+```
+
+## Summaries are very similar
+
+\tiny
+```{r}
+datasaurus_dozen %>% 
+  group_by(dataset) %>% 
+  summarise(mean_x = mean(x),
+            mean_y = mean(y),
+            correlation = cor(x,y))
+```
+
+## But now let's plot
+
+\tiny
+```{r, echo = FALSE}
+datasaurus_dozen  %>% 
+  filter(dataset %in% c("dino", "star", "away", "bullseye")) %>% 
+  ggplot(aes(x=x, y=y, colour=dataset)) +
+  geom_point() +
+  theme_minimal() +
+  facet_wrap(vars(dataset), nrow = 2, ncol = 2) +
+  labs(colour = "Dataset")
+```
+
+
+
+## Anscombe's quartet
+
+This is a modern version of a famous plot ‘Anscombe’s Quartet.’ That plot conveys the same message about the importance of plotting the actual data and not relying on summary statistics. 
+
+```{r, echo = FALSE, fig.width=6, fig.height=3}
+datasets::anscombe %>% 
+  select(x1:x4) %>% 
+  pivot_longer(x1:x4) %>% 
+  mutate(name = as.numeric(str_remove(name, "x"))) %>% 
+  rename(dataset = name,
+         x = value) %>% 
+  group_by(dataset) %>% 
+  mutate(i = 1:n()) %>% 
+  left_join(datasets::anscombe %>% 
+  select(y1:y4) %>% 
+  pivot_longer(y1:y4) %>% 
+  mutate(name = as.numeric(str_remove(name, "y"))) %>% 
+  rename(dataset = name,
+         y = value) %>% 
+  group_by(dataset) %>% 
+  mutate(i = 1:n())) %>% 
+  ggplot(aes(x, y)) + geom_point() + facet_wrap(~dataset) + 
+  geom_abline(intercept = 3, slope = 0.5, color = "royalblue", lwd = 1.2)+
+  theme_bw(base_size = 14)
+```
+
+
+## 
+
+\includegraphics{../fig/halloween.jpeg}
+
+
+# What makes a good plot?
+
+## The spiral of doom
+
+\centering
+\includegraphics[width = 0.6\textwidth]{../fig/spiral.png}
+
+
+
+```{r, echo = FALSE}
+library(tidyverse)
+library(lubridate)
+# Recreation: https://bydata.github.io/nyt-corona-spiral-chart/
+owid_url <- "https://github.com/owid/covid-19-data/blob/master/public/data/owid-covid-data.csv?raw=true"
+country <- "United States"
+covid <- read_csv(owid_url)
+covid_cases <- covid %>% 
+  filter(location == country) %>% 
+  select(date, new_cases, new_cases_smoothed) %>% 
+  arrange(date) %>% 
+  # Add the dates before the 1st confirmed case
+  add_row(date = as_date("2020-01-01"), new_cases = 0, new_cases_smoothed = 0,
+          .before = 1) %>% 
+  complete(date = seq(min(.$date), max(.$date), by = 1),
+           fill = list(new_cases = 0, new_cases_smoothed = 0)) %>% 
+  mutate(day_of_year = yday(date),
+         year = year(date)
+         )
+```
+## Line plot
+
+```{r, echo = FALSE}
+covid_cases %>% 
+  ggplot(aes(date, new_cases_smoothed)) + 
+  geom_line(color = "#D97C86", lwd = 1.2) +
+  theme_minimal() + 
+  labs(title = "New Covid-19 cases, United States", y = "")
+```
+
+## Area plot
+
+```{r, echo = FALSE}
+covid_cases %>% 
+  ggplot(aes(date, new_cases_smoothed)) + 
+  geom_area(fill = "#D97C86") +
+  theme_minimal() + 
+  labs(title = "New Covid-19 cases, United States", y = "")
+```
+
+## Ribbons
+
+```{r, echo=FALSE}
+covid_cases %>% 
+  mutate(y = 0) %>% 
+  ggplot(aes(date, y)) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin = month(date) - new_cases_smoothed / 2, ymax = month(date) + new_cases_smoothed / 2), fill = "#F0C0C1", color = "#D97C86") + 
+  geom_vline(xintercept = as_date("2021-01-01"), lty = 2, color = "grey28")+
+  geom_vline(xintercept = as_date("2022-01-01"), lty = 2, color = "grey28")+
+  geom_vline(xintercept = as_date("2020-01-01"), lty = 2, color = "grey28") + 
+  geom_hline(yintercept = 0, lty = 1, color = "grey4") +
+  theme_void()
+```
+
+
+
+
+
+<!-- ## Ribbons -->
+
+<!-- ```{r, echo=FALSE} -->
+<!-- covid_cases %>%  -->
+<!--   mutate(y = 0) %>%  -->
+<!--   ggplot(aes(date, y)) +  -->
+<!--   geom_line() +  -->
+<!--   geom_ribbon(aes(ymin = month(date) - new_cases_smoothed / 2, ymax = month(date) + new_cases_smoothed / 2), fill = "#F0C0C1", color = "#D97C86") +  -->
+<!--    #geom_vline(xintercept = as_date("2021-01-01"), lty = 2, color = "grey28")+ -->
+<!--    #geom_vline(xintercept = as_date("2022-01-01"), lty = 2, color = "grey28")+ -->
+<!--    #geom_vline(xintercept = as_date("2020-01-01"), lty = 2, color = "grey28") +  -->
+<!--   # geom_hline(yintercept = 0, lty = 1, color = "darkgray") + -->
+<!--   theme_void()+ -->
+<!--   coord_flip() -->
+<!--   #geom_text(x=as_date("2020-01-01")+30, y=4.1*10^5, label="2020")+ -->
+<!--   #geom_text(x=as_date("2021-01-01")+30, y=4.1*10^5, label="2021")+ -->
+<!-- #geom_text(x=as_date("2022-01-01")+30, y=4.1*10^5, label="2022") -->
+<!-- ``` -->
+
+
+
+
+## What makes a good plot?
+
+- Is the spiral the right graph to use?
+- What does right mean?
+- Does it effectively portray the information?
+- Is it misleading?
+- Is it easy to read?
+- Is it memorable?
+
+
+## Data visualization principles
+
+- Choose the right graph
+- Know your audience
+- Emphasize important patterns without being misleading
+- Clear, effective designs
+
+## Choose the right graph
+
+Choosing the right graph primarily depends on the type of variables that you are trying to visualize:
+
+- Quantitative variables e.g. histograms, scatter plots
+- Qualitative variables e.g. barcharts
+
+Choose the graph based on the kind of data and the message to be conveyed.
+
+- Do not use different graphs just for variety, as specific graphs convey certain types of information more effectively than others.
+- If not required, do not use any chart — show only numbers.
+
+
+
+## Pie charts 
+
+```{r, echo = FALSE}
+library(babynames)
+db <- babynames %>% 
+  mutate(starts_with = str_sub(name, 1, 1)) %>% 
+  group_by(year,sex, starts_with) %>% 
+  summarise(prop = sum(prop)) %>% 
+  arrange(sex, year, -prop) %>% 
+  filter(year==1990|year==2000|year==2010, sex=="F") %>% 
+  mutate(starts_with_big = ifelse(starts_with %in% c("A", "K", "J", "S", "C", "M"), starts_with, "Other")) %>% 
+  group_by(year, starts_with_big) %>% 
+  summarise(prop = sum(prop))
+
+par(mfrow = c(1, 2))
+pie(db$prop[db$year==1990], 
+    main = "Girl's names by starting letter, 1990", 
+    col =rainbow(7), 
+    labels = paste0(paste(db$starts_with_big[db$year==1990], round(db$prop[db$year==1990], 3)*100, sep = ", "), "%"))
+
+pie(db$prop[db$year==2010], 
+    main = "Girl's names by starting letter, 2010", 
+    col =rainbow(7), 
+    labels = paste0(paste(db$starts_with_big[db$year==2010], round(db$prop[db$year==2010], 3)*100, sep = ", "), "%"))
+```
+
+## Pie charts
+
+```{r}
+?pie
+```
+
+> Pie charts are a very bad way of displaying information. The eye is good at judging linear measures and bad at judging relative areas. A bar chart or dot chart is a preferable way of displaying this type of data.
+
+
+## Alternative
+
+```{r, echo = FALSE}
+db %>% 
+  filter(year!="2000") %>% 
+  mutate(starts_with_big = fct_reorder(starts_with_big, prop)) %>% 
+  ggplot(aes(starts_with_big, prop, fill = factor(year))) + 
+  geom_bar(stat = 'identity', position = 'dodge') + 
+  labs(title = "Girl's names starting letter, 1990 and 2010", y = "proportion", x = "letter") + 
+  theme_bw() + 
+  scale_fill_brewer(palette = "Set1", name = "year")
+```
+
+
+## Know your audience
+
+Graphs can be used for 
+
+- our own exploratory data analysis
+- to convey a message to experts, 
+- to help tell a story to a general audience. 
+
+Make sure that the intended audience understands each element of the plot.
+
+Examples: spiral plot, log scales
+
+- Think of the color blind. In R, `viridis` and `brewer` palettes give colorblind-friendly options
+
+## Emphasize important patterns without being misleading
+
+> There is no such thing as information overload. There is only bad design. — Edward Tufte
+
+- Eliminate distractions
+- Highlight the essential
+- Use color and text strategically
+- Avoid pseudo-3D plots
+
+## Highlight the essential
+
+\centering
+\includegraphics[width = 1.1\textwidth]{../fig/opioids.png}
+
+Source: https://link.springer.com/article/10.1007/s11524-021-00573-8
+
+# When to start the axis at zero?
+
+\includegraphics{../fig/class2_8.jpeg}
+
+\tiny
+[Source](https://www.mediamatters.org/fox-news/fox-news-newest-dishonest-chart-immigration-enforcement)
+
+## When to start the axis at zero?
+
+\includegraphics{../fig/temp_1.png}
+
+
+## When to start the axis at zero?
+
+\includegraphics{../fig/temp_2.jpeg}
+
+## When to include zeroes
+
+- With bar plots, we are implying the length is proportional to the quantities being displayed. By avoiding 0, relatively small differences can be made to look much bigger than they actually are.
+- With line plots or plots that use position, it is not neccessary to start the axis at zero (and could be misleading)
+
+##
+
+```{r, echo = FALSE}
+
+country_indicators <- read_csv("../../data/country_indicators.csv")
+p1 <- country_indicators %>% 
+  filter(year==2010) %>% 
+  ggplot(aes(region, life_expectancy)) + geom_boxplot() + coord_flip()+
+  labs(title = "Life expectancy (years), 2010", x = "", y = "life expectancy")+
+  theme_bw(base_size = 16)
+
+country_indicators <- read_csv("../../data/country_indicators.csv")
+p2 <- country_indicators %>% 
+  filter(year==2010) %>% 
+  ggplot(aes(region, life_expectancy)) + geom_boxplot() + coord_flip() + 
+  ylim(c(0, 90)) +
+  labs(title = "Life expectancy (years), 2010", x = "", y = "life expectancy")+
+  theme_bw(base_size = 16)
+  
+p1
+```
+
+
+##
+
+```{r, echo = FALSE}
+p2+
+  theme_bw(base_size = 16)
+```
+
+
+## Emphasize important patterns without being misleading
+
+\includegraphics{../fig/white_house.jpeg}
+
+## Clear, effective designs
+
+\centering
+\includegraphics[width = 0.65\textwidth]{../fig/e0_reversal.jpeg}
+
+
+# Important types of graphs
+
+## Important types of graphs
+
+- Histograms
+- Bar charts
+- Boxplots
+- Line plots
+- Scatter plots 
+
+
+## Example datasets used here
+
+1.  TTC subway delays (from last week)
+2. Country-level indicators, 2009-2017
+
+    
+    
+## Histograms
+
+Shows the distribution of a **quantitative** variable
+
+- Histograms show the frequency (count) of observations by value 
+- The range of values of a variables is divided into intervals ('bins') and then the number of observations in each bin is tabulated
+- A histogram shows the count of observations in each bin with a rectangle of height equal to the count
+- The x axis is the value bins, the y axis is the count/frequency (or proportion)
+
+## 
+
+```{r, echo = FALSE}
+country_ind <- read_csv("../../data/country_indicators.csv")
+country_ind %>% 
+  filter(year==2017) %>% 
+  ggplot(aes(life_expectancy)) + 
+  geom_histogram(binwidth = 2, fill = "firebrick", color = "white") + 
+  theme_bw(base_size = 14) + 
+  xlab("life expectancy") + 
+  labs(title = "Female life expectancy, 2017")
+```
+
+## 
+
+```{r, echo=FALSE}
+delay_2019 <- read_csv("../../data/ttc_delays_2019.csv")
+delay_2019 %>% 
+  filter(min_delay>0) %>% 
+  ggplot(aes(min_delay)) + 
+  geom_histogram(fill = "darkturquoise", color = "navy", binwidth = 10) +
+  #scale_x_log10() + 
+  theme_bw(base_size = 14) + 
+  xlab("delay (minutes)") + 
+  labs(title = "Delay times, TTC subway 2019")
+```
+
+## Making the histogram more informative
+
+```{r, echo=FALSE}
+ggplot(data = delay_2019) + 
+  geom_histogram(aes(x = min_delay, y = ..density.., fill = line), position = 'dodge', bins = 10) + scale_x_log10()+
+  theme_bw(base_size = 14) + 
+  xlab("delay (minutes)") + 
+  labs(title = "Delay times, TTC subway 2019",
+       subtitle = "by line")
+```
+
+## Bar charts
+
+Shows summary measures across values of a **categorical** (qualitative) variable
+
+- Illustrate the value of a particular outcome in a particular category
+- The 'value' can be counts, but could also be a summary measure (e.g. mean)
+- The value is again shown by a rectangle of height equal to the value
+- Bar carts can be plotted vertically or horizontally
+- In the vertical setting, the x axis is the categories and the y axis is the value of the quantitative variable
+
+##
+
+```{r, echo = FALSE}
+delay_2019 %>% 
+  filter(min_delay>0) %>% 
+  group_by(line) %>% 
+  count() %>% 
+  mutate(line = factor(line, levels = c("YU", "BD", "SRT", "SHP"),
+                       labels = c("YU", "BD", "SRT", "SHP"))) %>% 
+  ggplot(aes(x = line, y = n, fill = line)) + 
+  geom_col() + 
+  theme_bw(base_size = 14)+
+  theme(legend.position = 'none') +
+  ylab("count")+
+  ggtitle("Number of delays by line, 2019")
+```
+
+## Same but horizontal
+
+```{r, echo = FALSE}
+delay_2019 %>% 
+  filter(min_delay>0) %>% 
+  group_by(line) %>% 
+  count() %>% 
+  mutate(line = factor(line, levels = c("YU", "BD", "SRT", "SHP"),
+                       labels = c("YU", "BD", "SRT", "SHP"))) %>% 
+  ggplot(aes(x = line, y = n, fill = line)) + 
+  geom_col() + 
+  theme_bw(base_size = 14)+
+  theme(legend.position = 'none') +
+  ylab("count")+
+  ggtitle("Number of delays by line, 2019")+
+  coord_flip()
+```
+
+## Showing mean delay time
+
+```{r, echo = FALSE}
+delay_2019 %>% 
+  filter(min_delay>0) %>% 
+  group_by(line) %>% 
+ summarise(n = mean(min_delay)) %>% 
+  mutate(line = fct_reorder(as.factor(line), n)) %>% 
+  ggplot(aes(x = line, y = n, fill = line)) + 
+  geom_col() + 
+  theme_bw(base_size = 14)+
+  theme(legend.position = 'none') +
+  ylab("mean delay (mins)")+
+  ggtitle("Mean length of delay by line, 2019") + 
+  coord_flip()
+```
+
+
+
+<!-- ## A lego example -->
+
+<!-- \tiny -->
+<!-- ```{r} -->
+<!-- lego <- tibble(color = c("green", "white", "pink",  -->
+<!--                          "yellow", "blue", "light green", "orange"), -->
+<!--                count = c(6,5,4,3,2,2,1)) -->
+<!-- ``` -->
+
+<!-- ```{r, echo = FALSE} -->
+<!-- lego <- lego %>%  -->
+<!--   mutate(color = fct_reorder(color, -count)) -->
+<!-- ``` -->
+
+<!-- \centering -->
+<!-- \includegraphics[width = 0.8\textwidth]{../fig/lego_bar.jpeg} -->
+
+<!-- ## -->
+<!-- \tiny -->
+<!-- ```{r, echo = TRUE, fig.height = 4, fig.width = 6} -->
+<!-- ggplot(lego, aes(color, count, fill = color)) +  -->
+<!--   geom_bar(stat="identity") +  -->
+<!--   scale_fill_manual(values = c("#70961c", "white",  -->
+<!--                                "#ee5e4f", "#d5c47c", "#008db3", "#a5d395", "#d35800")) +  -->
+<!--   theme(legend.position = 'none', -->
+<!--         panel.background = element_rect(fill = "#d7d3c9", -->
+<!--                                 colour = "#d7d3c9", -->
+<!--                                 size = 0.5, linetype = "solid")) + -->
+<!--   ylab("number of blocks")+xlab("") -->
+<!-- ``` -->
+
+
+## Box plots
+
+Good for showing summaries of **quantitative** variables across different **categorical** groups. 
+
+
+- Visualizing quartiles (25/50/75 percentiles) of quantitative data
+- Boxes show the IQR and median
+- Whiskers show values outside IQR (in R/`ggplot`, default is 1.5*IQR)
+- Outliers may be shown with individual dots
+- In the vertical case, the x axis is the categories and the y axis is the quantitative variable
+
+## 
+
+```{r, echo = FALSE}
+country_ind %>% 
+  mutate(region = fct_reorder(region, -life_expectancy)) %>% 
+  ggplot(aes(x = region, y = life_expectancy, fill = region)) + 
+  geom_boxplot() +
+  scale_fill_viridis_d()+
+  theme_bw(base_size = 14)+
+  theme(legend.position = 'none', axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  xlab("")+
+  ylab("")+
+  ggtitle("Life expectancy (years) by region of the world")
+```
+
+## Could also do horizontal
+
+
+```{r, echo = FALSE}
+country_ind %>% 
+  mutate(region = fct_reorder(region, -life_expectancy)) %>% 
+  ggplot(aes(x = region, y = life_expectancy, fill = region)) + 
+  geom_boxplot() +
+  scale_fill_viridis_d()+
+  theme_bw(base_size = 14)+
+  theme(legend.position = 'none')+
+  xlab("")+ylab("")+
+  coord_flip()+
+  ggtitle("Life expectancy (years) by region of the world")
+```
+
+
+
+
+
+## Line plots
+
+Best used to describe values of a **quantitative** variable (on y axis) across sequential values of another **quantitative** variable on the x axis
+
+- Plots a series of values of a quantitative variable connected together by a line
+- Useful to visualize trends over time
+
+##
+
+```{r, echo = FALSE}
+country_ind %>%
+  filter(country %in% c("Canada", "United States of America")) %>% 
+  ggplot(aes(year, tfr, color = country)) + 
+  geom_line(lwd = 1.2) + 
+  geom_point(size = 2) + 
+  ggtitle("Total fertility rate, Canada and the US") + 
+  scale_x_continuous(breaks = 2009:2017) + theme_bw(base_size = 14)
+```
+
+
+## Scatter plots
+
+Shows relationship between two different **quantitative** variables
+
+- Uses dots to represent values for two different **quantitative** values
+- The position of each dot on the x and y axis indicates values for an individual data point
+- Extremely useful in visualizing the relationship between two quantitative variables
+
+##
+
+```{r, echo = FALSE}
+country_ind %>% 
+  filter(year == 2017) %>% 
+  ggplot(aes(tfr, life_expectancy)) + 
+  geom_point() + 
+  ggtitle("TFR versus life expectancy, 2017")+
+  theme_bw(base_size = 14)+ 
+  ylab("life expectancy (years)") + 
+  xlab("TFR (births per woman)")
+```
+
+##
+
+```{r, echo = FALSE}
+country_ind %>% 
+  filter(year == 2017) %>% 
+  ggplot(aes(tfr, life_expectancy, color = region)) + 
+  geom_point() + 
+  ggtitle("TFR versus life expectancy, 2017")+
+  theme_bw(base_size = 14)+ 
+  ylab("life expectancy (years)") + 
+  xlab("TFR (births per woman)") + 
+  scale_color_viridis_d()
+```
+
+# Introduction to `ggplot`
+
+## `ggplot`
+
+- `ggplot` is the graphing package that goes with the `tidyverse` in R
+- Very powerful to make a wide range of graphics
+- Every graph so far this lecture was done in `ggplot`
+- `ggplot` code works in layers, with each layer adding complexity
+    + start with defining dataset and different variables
+    + add on type of plot
+    + scales
+    + layout (facets)
+    + themes, fonts, sizes...
+
+More practice in lab, but here's a starting example
+
+## Reproducing the TFR verus life expectancy chart, colored by region
+
+```{r, echo = FALSE}
+country_ind %>% 
+  filter(year == 2017) %>% 
+  ggplot(aes(tfr, life_expectancy, color = region)) + 
+  geom_point() + 
+  ggtitle("TFR versus life expectancy, 2017")+
+  theme_bw(base_size = 14)+ 
+  ylab("life expectancy (years)") + 
+  xlab("TFR (births per woman)") + 
+  scale_color_viridis_d()
+```
+
+## Data
+
+\tiny
+
+```{r}
+# read in the data
+country_ind <- read_csv("../../data/country_indicators.csv")
+country_ind
+```
+```{r}
+# filter to just be 2017
+country_ind_2017 <- country_ind %>% filter(year==2017)
+```
+
+
+## A blank canvas
+`aes` stands for aesthetic and tells ggplot the main characteristics of your plot (x, y, and if the color or fill vary by group)
+
+\tiny
+```{r, fig.width=4, fig.height = 2.2}
+plot1 <- ggplot(data = country_ind_2017, aes(x = tfr, y = life_expectancy))
+
+#print
+plot1
+```
+
+## Add the points
+Add layers with ggplot using the `+`
+\tiny
+```{r, fig.width=4, fig.height = 2.2}
+plot1 <- ggplot(data = country_ind_2017, aes(x = tfr, y = life_expectancy)) + 
+  geom_point()
+
+plot1
+```
+
+## Tidy up labels
+
+\tiny
+```{r, fig.width=4, fig.height = 2.2}
+plot1 <- ggplot(data = country_ind_2017, aes(x = tfr, y = life_expectancy)) + 
+  geom_point()+
+  xlab("TFR (births per woman)")+
+  ylab("life expectancy (years)")
+  
+plot1
+```
+
+## Title
+
+\tiny
+```{r, fig.width=4, fig.height = 2.2}
+plot1 <- ggplot(data = country_ind_2017, aes(x = tfr, y = life_expectancy)) + 
+  geom_point()+
+  xlab("TFR (births per woman)")+
+  ylab("life expectancy (years)")+
+  ggtitle("TFR versus life expectancy, 2017")
+  
+plot1
+```
+
+## Change color of points
+to see all colors, type `colors()`
+
+\tiny
+```{r, fig.width=4, fig.height = 2.2}
+plot1 <- ggplot(data = country_ind_2017, aes(x = tfr, y = life_expectancy)) + 
+  geom_point(color = "red")+
+  xlab("TFR (births per woman)")+
+  ylab("life expectancy (years)")+
+  ggtitle("TFR versus life expectancy, 2017")
+  
+plot1
+```
+
+
+## Coloring by group 
+
+This goes in the `aes()` because it **depends on the data**
+\tiny
+```{r, eval = FALSE}
+plot1 <- ggplot(data = country_ind_2017, aes(x = tfr, y = life_expectancy, color = region)) + 
+  geom_point()+
+  xlab("TFR (births per woman)")+
+  ylab("life expectancy (years)")+
+  ggtitle("TFR versus life expectancy, 2017")
+  
+plot1
+```
+
+## 
+\tiny
+```{r, echo = FALSE}
+plot1 <- ggplot(data = country_ind_2017, aes(x = tfr, y = life_expectancy, color = region)) + 
+  geom_point()+
+  xlab("TFR (births per woman)")+
+  ylab("life expectancy (years)")+
+  ggtitle("TFR versus life expectancy, 2017")
+  
+plot1
+```
+
+
+## Change theme (optional) and size of points
+\tiny
+```{r, eval = FALSE}
+plot1 <- ggplot(data = country_ind_2017, aes(x = tfr, y = life_expectancy, color = region)) + 
+  geom_point(size =2)+
+  xlab("TFR (births per woman)")+
+  ylab("life expectancy (years)")+
+  ggtitle("TFR versus life expectancy, 2017")+
+  theme_bw(base_size = 14)
+  
+plot1
+```
+
+## 
+\tiny
+```{r, echo = FALSE}
+plot1 <- ggplot(data = country_ind_2017, aes(x = tfr, y = life_expectancy, color = region)) + 
+  geom_point(size =2)+
+  xlab("TFR (births per woman)")+
+  ylab("life expectancy (years)")+
+  ggtitle("TFR versus life expectancy, 2017")+
+  theme_bw(base_size = 14)
+  
+plot1
+```
+
+## Change color scheme
+`viridis` and `brewer` both good options
+\tiny
+```{r, eval = FALSE}
+plot1 <- ggplot(data = country_ind_2017, aes(x = tfr, y = life_expectancy, color = region)) + 
+  geom_point(size =2)+
+  xlab("TFR (births per woman)")+
+  ylab("life expectancy (years)")+
+  ggtitle("TFR versus life expectancy, 2017")+
+  theme_bw(base_size = 14)+
+  scale_color_viridis_d()
+  
+plot1
+```
+
+## 
+\tiny
+```{r, echo = FALSE}
+plot1 <- ggplot(data = country_ind_2017, aes(x = tfr, y = life_expectancy, color = region)) + 
+  geom_point(size =2)+
+  xlab("TFR (births per woman)")+
+  ylab("life expectancy (years)")+
+  ggtitle("TFR versus life expectancy, 2017")+
+  theme_bw(base_size = 14)+
+  scale_color_viridis_d()
+  
+plot1
+```
+
+
+## Summary
+
+- EDA and data visualization is often just as informative and important as statistical analysis
+- It is essential to understand the structure of your data, missing-ness, any outliers/issues, and the raw patterns in your data before deciding on your statistical analysis
+- Plot, plot, plot
+- Practice, practice, practice
+
+Plots:
+
+- Bar charts for categorical/qualitative variables 
+- Histograms, boxplots for one quantitative variable (potentially across multiple categories)
+- Line plots and scatter plots for two quantitative variables (line plot when one is sequential)
+
+
