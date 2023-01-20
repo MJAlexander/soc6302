@@ -31,25 +31,39 @@ my_fruit
 
 The `group_by` function allows you to get key summary statistics by group (levels of a categorical variable). Use in combination with `summarize` etc
 
+```{r}
+gss |> 
+  group_by(province) |> 
+  summarise(mean_age = mean(age))
+```
+
+Grouping by more than one variable:
+
+```{r}
+gss |> 
+  group_by(province,place_birth_canada) |> 
+  summarise(mean_age = mean(age))
+```
+
+
 e.g. mean age and standard deviation by marital status in GSS
 
 ```{r}
 gss |> 
   group_by(marital_status) |> 
   summarize(mean_age = mean(age), 
-            sd_age = sd(age)) |> 
-  arrange(mean_age)
+            sd_age = sd(age))
 ```
 
 Note that the above table shows the mean and sd of age for when marital status is missing (NA). We may want to remove those. To do this, use the `drop_na` function
 
 ```{r}
 gss |> 
-  drop_na(marital_status) |> 
+  drop_na(marital_status) |> # firstly dropping all the missing values from the marital status column
   group_by(marital_status) |> 
   summarize(mean_age = mean(age), 
             sd_age = sd(age)) |> 
-  arrange(mean_age)
+  arrange(mean_age) # sorting the output by mean age smallest to largest
 ```
 
 # Calculating the correlation coefficient
@@ -59,8 +73,8 @@ To calculate the correlation coefficient between two quantitative variables, e.g
 ```{r}
 gss |> 
   select(age, age_at_first_marriage) |> 
-  drop_na() |> 
-  summarise(correlation = cor(age, age_at_first_marriage))
+  drop_na() |> # remove missing values 
+  summarise(correlation = cor(age, age_at_first_marriage)) # calculating the correlation between age and age of first marriage
 ```
 
 # Counts and proportions
@@ -75,6 +89,11 @@ e.g. the number of people by province of residence in the GSS
 gss |> 
   group_by(province) |> 
   tally()
+
+
+gss |> 
+  group_by(province) |> 
+  tally(name = "number")
 ```
 
 ## Getting the proportion in each group
@@ -85,11 +104,45 @@ Also often useful to get proportion of total in each group:
 gss |> 
   group_by(province) |> 
   tally() |> 
-  mutate(prop = n / sum(n))
+  mutate(prop = n / sum(n))  # new column called prop, equal to the count (n) divided by the sum of all the n's
 ```
 
 # Review questions
 
 1.  How many respondents were born in Canada?
+
+```{r}
+gss |> 
+  group_by(place_birth_canada) |> 
+  tally()
+```
+
+
 2.  What proportion of respondents were born in Canada?
+
+```{r}
+gss |> 
+  group_by(place_birth_canada) |> 
+  tally() |> 
+  mutate(proportion = n/sum(n))
+```
+
+
 3.  Calculate respondents mean age by whether or not they were born in Canada
+
+```{r}
+gss |> 
+  mutate(born_in_canada = ifelse(place_birth_canada=="Born in Canada", "Yes", "No")) |> 
+  group_by(born_in_canada) |> 
+  summarize(mean_age = mean(age)) |> 
+  drop_na()
+```
+
+```{r}
+gss |> 
+  filter(place_birth_canada!="Don't know") |>  # != means "not equal"
+  group_by(place_birth_canada) |> 
+  summarize(mean_age = mean(age)) |> 
+  drop_na()
+```
+

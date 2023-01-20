@@ -57,7 +57,7 @@ RStudio has four different panes
 An Quarto file allows you to type free text and embed R code in the one document. The main parts of an Quarto file are
 
 -   the YAML: this is the bit at the top of the document surrounded by dashes. The YAML tells Markdown information like: what the title and date is, who the author is, and what the Markdown file should be render as (in this case, a pdf document).
--   Headings: lines starting with # or ## or ### etc, with the text colored in blue. One # is a main heading, two ## is a sub-heading, etc
+-   Headings: lines starting with \# or \## or \### etc, with the text colored in blue. One \# is a main heading, two \## is a sub-heading, etc
 -   Free text, like what this text is. Note that when the document is rendered, some formatting is applied. (you will notice that these lines that start with a - will be formatted as bullet points)
 -   You can view in either 'Source' mode, which shows no formatting, or 'Visual' model, which gives you an idea of the document formatting
 -   R chunks, shown in gray, like the one below.
@@ -80,8 +80,6 @@ For a quick guide on codes for Quarto check out this [**summary of basics**](htt
 ```{r}
 12*(7)
 ```
-
-
 
 ## How to render a Quarto file
 
@@ -263,8 +261,6 @@ library(tidyverse)
 2+2
 ```
 
-
-
 # Reading in data
 
 The tidyverse package contains a lot of useful functions. One is `read_csv` function, which allows us to read in data from CSV files.
@@ -274,6 +270,7 @@ We are going to read in the GSS csv file. Note that you might have to change the
 ```{r}
 # make sure the file name points to where you've saved the gss file
 # for example, I have it saved in a "data" folder
+library(tidyverse)
 gss <- read_csv(file = "../data/gss.csv")
 ```
 
@@ -284,12 +281,14 @@ You can look at the gss file by going to the "Environment" pane and clicking on 
 You can print out the top rows of the gss object by using `head`
 
 ```{r}
+head(gss)
 ```
 
 We can print the dimensions of the gss object (number of rows and number of columns)
 
 ```{r}
 # output of this is a vector of 2 numbers 
+dim(gss)
 # first number = number of rows
 # second number is the number of columns
 ```
@@ -303,7 +302,7 @@ This section illustrates some important functions that make manipulating dataset
 We can select a column from a dataset. For example the code below selects the column with the respondents age:
 
 ```{r}
-
+select(gss, age)
 ```
 
 ## The pipe
@@ -311,13 +310,15 @@ We can select a column from a dataset. For example the code below selects the co
 Instead of selecting the age column like above, we can make use of the pipe function. This is the \|\> or %\>% notation. It looks funny but it may help to read it as like saying "and then". On a more technical note, it takes the first part of code and *pipes* it into the first argument of the second part and so on. So the code below takes the gss dataset AND THEN selects the age column:
 
 ```{r}
-
+gss |> 
+  select(age)
 ```
 
 Notice that the commands above don't save anything. Assign the age column to a new object called `gss_age`
 
 ```{r}
-
+gss_age <- gss |> 
+  select(age)
 ```
 
 ## `arrange`
@@ -325,23 +326,44 @@ Notice that the commands above don't save anything. Assign the age column to a n
 The `arrange` function sorts columns from lowest to highest value. So for example we can select the age column then arrange it from smallest to largest number. Note that this involves using the pipe twice (so taking gss AND THEN selecting age AND then arranging age).
 
 ```{r}
-
+# sort from smallest to largest
+gss |> 
+  select(age) |> 
+  arrange(age)
 ```
 
+Sort from highest to lowest:
+
+```{r}
+# sort from largest to smallest
+gss |> 
+  select(age) |> 
+  arrange(-age)
+```
+
+
+
 Side note: you need not press enter after each pipe but it helps with readability of the code.
+
+```{r}
+gss |> select(age)
+```
+
 
 ## `filter`
 
 To filter rows based on some criteria we use the `filter` function. e.g. filter to only include those aged 30 or less:
 
 ```{r}
-
+gss_lt30 <- gss |> 
+  filter(age<=30)
 ```
 
 Filter takes any logical arguments. If we want to filter by participants who identified as *Female*, we use `==` operator.
 
 ```{r}
-
+gss |> 
+  filter(sex=="Female")
 ```
 
 ## `mutate`
@@ -349,21 +371,67 @@ Filter takes any logical arguments. If we want to filter by participants who ide
 We can add columns using the mutate function. For example we may want to add a new column called `age_plus_1` that adds one year to everyone's age:
 
 ```{r}
+gss2 <- gss |> 
+  mutate(age_plus_1 = age+1)
+```
+
+Let's create a new variable `live_in_ontario`, which is equal to "Yes" if respondent lives in ontario and "No" if they don't. Use the ifelse function
+
+```{r}
+gss3 <- gss |> 
+  mutate(live_in_ontario = ifelse(province=="Ontario", "Yes", "No"))
+
+gss3 |> 
+  select(province, live_in_ontario)
 
 ```
+
 
 ## `summarize`
 
 The `summarize` function is used to give summaries of one or more columns of a dataset. For example, we can calculate the mean age of all respondents in the gss:
 
 ```{r}
-
+gss |> 
+  summarise(mean_age  = mean(age))
 ```
+
+SHORTCUTS (MAC)
+
+- Execute code: command+return
+- To write a pipe (|>) : command+shift+M
+
 
 # Review questions
 
-1.  Create a new R Markdown file for these review questions
+1.  Create a new Quarto file for these review questions
 2.  Find the mean age at first birth (age_at_first_birth) of respondents in the GSS
+
+We need to calculate the mean after removing the missing values (NA)
+
+```{r}
+gss |> 
+  summarise(mean_age_fb = mean(age_at_first_birth, na.rm = TRUE))
+```
+
+
 3.  Create a new dataset that just contains GSS respondents who are less than 20 years old.
+
+```{r}
+gsslt20 <- gss |> 
+  filter(age<20)
+```
+
 4.  How many rows does the dataset in step 4 have?
+
+```{r}
+dim(gsslt20)
+```
+
 5.  What is the largest case id in the dataset in step 3?
+
+```{r}
+gss |> 
+  arrange(-caseid)
+```
+
