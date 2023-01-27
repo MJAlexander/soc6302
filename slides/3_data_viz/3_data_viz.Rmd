@@ -20,7 +20,6 @@ What we will cover today:
 - Data visualization principles
 - Important types of graphs
 
-Assignment 1 is out
 
 
 
