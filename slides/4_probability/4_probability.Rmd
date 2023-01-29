@@ -1,0 +1,553 @@
+---
+title: "SOC6302 Statistics for Sociologists"
+author: "Monica Alexander"
+date: "Week 4: Probability! Chance! Randomness!"
+output: 
+  beamer_presentation:
+    slide_level: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, size = '\tiny')
+library(tidyverse)
+```
+
+
+## Announcements
+
+
+
+
+## What's the point of today
+
+- Population --> Sample --> Population
+- We are introducing randomness, but trying to make meaningful inferences despite this
+- Need to know basic probability concepts 
+- This helps us to talk about distributions of the statistical quantities we are interested in
+    + e.g. population means, but also regression coefficients
+
+## Random variables
+
+From first week: A **random variable** is a variable whose values depend on the outcomes of a random process. 
+
+Examples
+
+- Flipping a coin four times and recording the number of heads
+- Randomly sampling six people and recording their height
+- A toddler randomly selecting a Lego car
+
+## Coin toss example
+
+Imagine tossing a coin 4 times. Say we are interested in the number of heads that turns up. The observed outcomes are:
+
+```{r, echo = FALSE}
+library(tidyverse)
+set.seed(999)
+tosses <- purrr::rbernoulli(4)
+ifelse(tosses, "H", "T")
+```
+
+So the number of heads is 2. But we can toss it another 4 times. The second set of observed outcomes are
+
+```{r, echo = FALSE}
+set.seed(176)
+tosses <- purrr::rbernoulli(4)
+ifelse(tosses, "H", "T")
+```
+
+So the number of heads is 1.
+
+The number of heads is a **random variable** that depends on the random process of flipping a coin.
+
+## Heights example
+
+Say we are interested in heights of people in Canada. We take a random sample of 6 people. Their heights are (in cm)
+
+```{r, echo = FALSE}
+set.seed(6)
+round(rnorm(6, mean = 175, sd = 8), 2)
+```
+
+We sample another 6 people. Their heights are
+
+```{r, echo = FALSE}
+round(rnorm(6, mean = 175, sd = 8), 2)
+```
+
+So height is a random variable that depends on the random process of sampling the population
+
+## Notation
+
+- Call our random variable of interest $X$
+    + in coin example $X =$ number of heads
+    + in heights example $X=$ height
+- After we observe values we denote these with lower case $x$
+    + coin example $x = 2$ and $x = 1$
+    + heights example $\{x_1 = 177.16, x_2 = 169.96, x_3 = 181.95, x_4 = 188.82, x_5 = 175.19, x_6 = 177.94\}$ etc
+
+
+# Probability essentials
+
+## Probability
+
+- Based on our sample or other random process (as in the coin flipping or a toddler choosing Lego), we would like to make valid statements about the underlying population or quantity of interest
+- Probability is one tool that will help us do that
+- Probability is all about talking about the chance of something (an event happening or observing a particular thing)
+- There is uncertainty associated with the event or observation, and probability helps us to quantify this
+
+<!-- ## Definitions and notation -->
+
+<!-- - **Experiment**: An experiment can be any process, in a laboratory or otherwise, where we can observe the result of a process and the result of that process is uncertain.  -->
+<!-- - **Events**: outcomes of an experiment. Denote event $i$ as $A_i$, with $N$ possible events -->
+<!-- - **Sample space**: A listing of all possible events  -->
+<!-- - **Probability function**: a rule that assigns a value $P(A_i)$ to each event such that  -->
+<!--     + $P(A_i)$ is greater than or equal to zero ($P(A_i) \geq 0$) -->
+<!--     + $P(A_i)$ is less that or equal to one ($P(A_i) \leq 1$) -->
+<!--     + the sum of all $P(A_i)$ is equal to one for a finite sample space. ($\sum_i^N P(A_i) =1$) -->
+    
+## Definitions 
+
+- **Events**: things that can happen
+    + what's an example of an event when flipping a coin once? Four times?
+    + what's an example of an event of sampling six people's heights?
+- **Probability function**: a rule that assigns a value $P(A)$ to each event $A$. We know
+    + Probability is positive
+    + Probability is at most 1
+    + The sum of probablities of all possible events is 1
+
+## Lego example
+
+We have the following lego trains and cars:
+
+\begin{figure}
+\centering
+\includegraphics[width = 0.5\textwidth]{../fig/lego_train1.jpeg}
+\end{figure}
+
+## Lego example
+
+My son randomly draws out one vehicle 
+
+\begin{figure}
+\centering
+\includegraphics[width = 0.5\textwidth]{../fig/lego_train2.jpeg}
+\end{figure}
+
+## Lego example
+
+Let's define some events:
+
+- A = "Choose a train"
+- B = "Choose a vehicle that is blue"
+
+What is $P(A)$? What is $P(B)$?
+
+Probability is just counting!
+
+## Probability is just counting!
+
+## Additive / Union rule
+
+What is $P(A \text{ or } B)$? That is the probability that the vehicle is a train or is the color blue?
+
+$$P(A \text{ or } B) = P(A) + P(B) - P(A \text{ and }B)$$
+Note that if $A$ and $B$ are **mutually exclusive** then they can't happen together so $P(A \text{ or } B) = P(A) + P(B)$.
+
+## Conditional probability
+
+- The probability of something happening given we know something else
+- $P(B|A)$ is conditional probability i.e. the probability of B given that A is true 
+- Lego examples
+    + what is $P(B|A)$?
+    + what is the probability that the vehicle is a train given it has red wheels?
+    + what is the probability that the vehicle is white given it is a car? 
+
+## Conditional probability
+
+Conditional probability is important for us 
+
+- What's the probability that someone work's remotely given they work in finance (vs hospitality?)
+- What's the probability that someone graduates college given their parent's did?
+
+## Multiplicative / Intersection rule
+
+What is $P(A \text{ and } B)$? That is the probability that the vehicle is a train and is the color blue?
+
+$$P(A \text{ and } B) = P(A) \times P(B|A)$$
+
+
+## Independence
+
+If two events $A$ and $B$ are independent, then $P(A)$ is not affected by the condition $B$, and vice versa, so we can say that $P(A|B) = P(A)$ and likewise, $P(B|A) = P(B)$, so the multiplicative rule becomes
+
+
+$$P(A \text{ and } B) = P(A) \times P(B)$$
+
+## Complements
+
+the complement of any event $A$ is the event [not $A$], i.e. the event that $A$ does not occur. It is denoted $A^c$.
+
+## Lego practice
+
+Interpret and calculate the following
+
+- $P(B|A)$
+- $P(A|B)$
+- $P(A^c)$
+- $P(A|B^c)$
+
+
+
+# Probability distributions
+
+## Back to coin flipping example
+
+- The process of tossing a coin four times qualifies as an experiment
+- We can observe the outcome of each toss, and the outcome is uncertain. 
+- Our random variable of interest was the number of heads
+
+First, let’s look at possibilities. On the first toss, we could observe an outcome of heads (H) or tails (T). On each of the remaining three tosses, we could observe an H or a T. Thus, the possibilities for four tosses can be enumerated as follows:
+
+- HHHH, HHHT, HHTH, HHTT, HTHH, HTHT, HTTH, HTTT, THHH, THHT, THTH, THTT, TTHH, TTHT, TTTH, and TTTT. 
+
+We can see that there are 16 different possible outcomes when listed as simple events. 
+
+## Flipping a coin
+
+We can enumerate these possible outcomes in a table with the associated probability and observed number of heads
+
+\footnotesize
+
+\begin{table}[]
+\begin{tabular}{|l|r|r|}
+\hline
+event & probability & number of heads \\ \hline
+HHHH  & 0.0625      & 4               \\ \hline
+HHHT  & 0.0625      & 3               \\ \hline
+HHTH  & 0.0625      & 3               \\ \hline
+HHTT  & 0.0625      & 2               \\ \hline
+HTHH  & 0.0625      & 3               \\ \hline
+HTHT  & 0.0625      & 2               \\ \hline
+HTTH  & 0.0625      & 2               \\ \hline
+HTTT  & 0.0625      & 1               \\ \hline
+THHH  & 0.0625      & 3               \\ \hline
+THHT  & 0.0625      & 2               \\ \hline
+THTH  & 0.0625      & 2               \\ \hline
+THTT  & 0.0625      & 1               \\ \hline
+TTHH  & 0.0625      & 2               \\ \hline
+TTHT  & 0.0625      & 1               \\ \hline
+TTTH  & 0.0625      & 1               \\ \hline
+TTTT  & 0.0625      & 0               \\ \hline
+\end{tabular}
+\end{table}
+
+## Flipping a coin
+
+Using this we can work out different probabilities. e.g. probability of 3 heads
+
+$P(X = 3) = P(HHHT \text{ or } HHTH \text{ or } HTHH \text{ or } THHH) = 4/16$
+
+## Probability distribution for the number of heads
+
+Given our RV of interest is the number of heads and that all events are mutually exclusive, we can summarize the table as
+
+\begin{table}[]
+\begin{tabular}{|r|r|}
+\hline
+\multicolumn{1}{|l|}{Number of heads (X)} & \multicolumn{1}{l|}{P(X)} \\ \hline
+4                                         & 1/16                      \\ \hline
+3                                         & 4/16                      \\ \hline
+2                                         & 6/16                      \\ \hline
+1                                         & 4/16                      \\ \hline
+0                                         & 1/16                      \\ \hline
+\end{tabular}
+\end{table}
+
+We have a **probability distribution** for the number of heads. That is, a rule or function that associates the probability of observing that particular value with each value of a random
+variable. The probability distribution for a **discrete** RV (like # heads) is called a **probability mass function**
+
+## Simulating outcomes in R
+
+We can **simulate** coin flips in R using the `sample` function
+
+\tiny
+```{r}
+possible_events <- c("H", "T")
+coin_flips <- sample(possible_events, size = 4, replace = TRUE)
+coin_flips
+```
+
+## Simulating outcomes in R
+
+We can do this simulation experiment more than once and count the number of observed heads each time. For example, the output below show the results of 100 experiments (of four coin flips) and the number of times each value of heads was observed.
+\vspace{5mm}
+
+```{r, echo = F}
+library(kableExtra)
+number_of_experiments <- 100
+coin_flip_results <- tibble()
+
+set.seed(86)
+for(i in 1:number_of_experiments){
+  coin_flips <- sample(possible_events, size = 4, replace = TRUE)
+  this_result <- tibble(experiment = i, flip = 1:4, outcome = coin_flips)
+  coin_flip_results <- bind_rows(coin_flip_results, this_result)
+}
+
+samp_dist <- coin_flip_results %>%
+  group_by(experiment) %>%
+  summarise(heads = sum(outcome=="H")) %>%
+  group_by(heads) %>%
+  tally()
+
+samp_dist %>% kable()
+
+```
+
+## The sampling distribution
+
+```{r, echo = FALSE}
+samp_dist %>%
+  mutate(probability = n/sum(n)) %>%
+  kable()
+```
+
+A **sampling distribution** is a probability distribution for a statistic based on repeated samples. Here, our random-sample-based statistic is the number of heads in four coin flips.
+
+
+<!-- ## The sampling distribution -->
+
+<!-- Each coin flip (or any experiment with only two outcomes) is called a **Bernoulli trial**. A series of two or more independent Bernoulli trials constitutes a **binomial experiment**: -->
+
+<!-- 1. Each trial can have only two outcomes, often called success and failure. -->
+<!-- 2. The experiment has a specified number of trials, usually denoted by $n$. -->
+<!-- 3. The probability of a success is usually denoted by $p$ and the probability of a failure by $q$; -->
+<!-- thus, the sum of $p$ and $q$ is equal to 1 -->
+<!-- 4. The trials are independent of one another. -->
+<!-- 5. The random variable is defined as the number of successes observed in the $n$ trials. -->
+
+<!-- The sampling distribution of the coin flips example is a **Binomial distribution** with $n = 4$ and $p = 0.5$ -->
+
+## The expected value of a random variable
+
+- In the first week, we discussed summary measures of data (measures of central tendency, spread, range)
+- These types of measures are also useful to summarize sampling distributions of random variables.
+
+Intuitively, on average, we would expect to see about two heads and two tails in any sequence of four trials. Imagine that we were to replicate the four tosses many, many times and take note of the number of heads in each of the series of four tosses. After many, many series, we could find the mean number of heads across the large number of series; it would seem reasonable to expect that the mean should be quite close to two. This is the **expected value**.
+
+## The expected value of a random variable
+
+For a discrete random variable, $X$, with a known probability distribution $P(X_i)$ and where $X_i$ is the $i$th outcome in the set of $k$ simple events:
+
+\footnotesize
+$$
+E(X)=X_{1} \times P\left(X_{1}\right)+X_{2} \times P\left(X_{2}\right)+\ldots+X_{k} \times P\left(X_{k}\right)=\sum_{i=1}^{k} X_{i} \times P\left(X_{i}\right)=\mu
+$$
+
+\normalsize
+The expected value is a weighted mean of all the possible values of the RV, weighted by their probabilities. It is given the symbol $\mu$.
+
+Calculate the expected value for the number of heads in four coin flips.
+
+## Expected value
+
+## The variance of a random variable
+
+In week 1 we defined the variance is the average of the squared deviations from the mean. We can use the definition of expected value to derive the variance, given the probability distribution
+
+$$
+\begin{aligned}
+\sigma^{2} &=E\left[(X-\mu)^{2}\right]\\
+&=\left[X_{1}-E(X)\right]^{2} \times P\left(X_{1}\right)+\ldots+\left[X_{k}-E(X)\right]^{2} \times P\left(X_{k}\right) \\
+&=\sum_{i=1}^{k}\left[X_{i}-E(X)\right]^{2} \times P\left(X_{i}\right)
+\end{aligned}
+$$
+
+
+Calculate the variance for the number of heads in four coin flips.
+
+## Variance
+
+<!-- ## Summary -->
+
+<!-- - If we know the probability distribution of a discrete random variable, we know the mean and variance of the random variable, and hence, the standard deviation of the random variable. -->
+<!-- - Thus, we can make predictions about where the values should center and how spread out they should be. -->
+<!-- - If the random variable X is a continuous variable, then the idea is the same, but the sums $\sum$ need to be replaced with integrals $\int$ and we would need some calculus. -->
+
+## Probabilities as areas
+
+```{r, echo = FALSE}
+ggplot(tibble(heads = 0:4, probability = c(1/16, 4/16, 6/16, 4/16, 1/16)), aes(x = heads, y = probability))+geom_bar(stat = "identity")
+```
+
+## Probabilities as areas
+
+- To calculate probabilities, can sum up the area of the rectangles
+- E.g. $P(X\geq3)$ would be the sum of the right two rectangles
+- What is $P(1 \leq X \leq3)$?
+- What is $P(1 \leq X <3)$?
+
+## Continuous random variables and probability distributions
+
+- So far we have talked about a discrete RV
+- But a lot of our RVs of interest are continuous (e.g. height)
+- Can think about in the same way (defining probability distributions, expected values, etc) 
+- Instead of having a table of values making up the probability distribution (or pmf), we have a mathematically defined function 
+- A probability distribution for a continuous RV is called a **probability density function**
+
+## A continuous probability distribution is just a histogram with infinitely small bins
+
+```{r, echo = FALSE}
+set.seed(76)
+heights <- tibble(height = rnorm(18000, mean = 170, sd = 8))
+heights %>% 
+  ggplot(aes(height)) + 
+  geom_histogram(binwidth = 5, color = "firebrick4", fill = "steelblue4")+
+  ggtitle("Adult heights")
+```
+
+##
+
+```{r, echo = FALSE}
+heights %>% 
+  ggplot(aes(height)) + 
+  geom_histogram(binwidth = 3, color = "firebrick4", fill = "steelblue4")+
+  ggtitle("Adult heights")
+```
+
+##
+
+```{r, echo = FALSE}
+heights %>% 
+  ggplot(aes(height)) + 
+  geom_histogram(binwidth = 2, color = "firebrick4", fill = "steelblue4", aes(y = ..density..))+
+  ggtitle("Adult heights")
+```
+
+## Probability density function
+
+```{r, echo = FALSE}
+ggplot() +
+  stat_function(fun = dnorm,
+                geom = "area",
+                args = list(
+                  mean = 170,
+                  sd = 8
+                ),
+                fill = "steelblue4", color = "firebrick4") +
+  xlim(c(140,200))+
+  ylab("density") + 
+  ggtitle("Adult heights")
+```
+
+
+
+## Probabilities as areas
+
+```{r, echo = FALSE}
+ggplot() +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    color = "firebrick4",
+    alpha = .3,
+    args = list(
+                  mean = 170,
+                  sd = 8
+                )
+  ) +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    args = list(
+                  mean = 170,
+                  sd = 8
+                ),
+    xlim = c(185, 200)
+  ) +
+  ylab("Density")+
+  scale_x_continuous(limits = c(140, 200), breaks = seq(140, 200, by = 15))+
+    ggtitle("Adult heights")
+```
+
+## Probabilities as areas
+
+```{r, echo = FALSE, fig.height=4}
+ggplot() +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    color = "firebrick4",
+    alpha = .3,
+    args = list(
+                  mean = 170,
+                  sd = 8
+                )
+  ) +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    args = list(
+                  mean = 170,
+                  sd = 8
+                ),
+    xlim = c(185, 200)
+  ) +
+  ylab("Density")+
+  scale_x_continuous(limits = c(140, 200), breaks = seq(140, 200, by = 15))+
+    ggtitle("Adult heights")
+```
+
+- The probability that height is greater than 185cm i.e. $P(X > 185)$
+- Like summing up very tiny histogram bins above a certain point
+
+## Probability as areas
+
+Important notes
+
+- The sum of the whole area under the curve is equal to 1 (because we know all probabilities have to sum to one)
+- A value is either greater than or less than/equal to a number
+- So can express probabilities as the complement e.g. $P(X> 185) = 1 - P(X \leq 185)$ 
+
+
+```{r, echo = FALSE, fig.height=3}
+ggplot() +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    color = "firebrick4",
+    alpha = .3,
+    args = list(
+                  mean = 170,
+                  sd = 8
+                )
+  ) +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    args = list(
+                  mean = 170,
+                  sd = 8
+                ),
+    xlim = c(185, 200)
+  ) +
+  ylab("Density")+
+  scale_x_continuous(limits = c(140, 200), breaks = seq(140, 200, by = 15))+
+    ggtitle("Adult heights")
+```
+
+
+## Summary
+
+- Probability concepts
+    + Additive rule, mutually exclusive events, multiplicative rule, independence, complements
+- Probability distributions
+    + Discrete RV = probability mass function
+    + Continuous RV = probability density function
+- Probabilities as areas
