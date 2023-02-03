@@ -15,6 +15,7 @@ library(tidyverse)
 
 ## Announcements
 
+- A1 due 'today'
 
 
 
@@ -107,6 +108,7 @@ So height is a random variable that depends on the random process of sampling th
     
 ## Definitions 
 
+- **Experiment**: An experiment can be any process, in a laboratory or otherwise, where we can observe the result of a process and the result of that process is uncertain.
 - **Events**: things that can happen
     + what's an example of an event when flipping a coin once? Four times?
     + what's an example of an event of sampling six people's heights?
@@ -266,67 +268,6 @@ Given our RV of interest is the number of heads and that all events are mutually
 We have a **probability distribution** for the number of heads. That is, a rule or function that associates the probability of observing that particular value with each value of a random
 variable. The probability distribution for a **discrete** RV (like # heads) is called a **probability mass function**
 
-## Simulating outcomes in R
-
-We can **simulate** coin flips in R using the `sample` function
-
-\tiny
-```{r}
-possible_events <- c("H", "T")
-coin_flips <- sample(possible_events, size = 4, replace = TRUE)
-coin_flips
-```
-
-## Simulating outcomes in R
-
-We can do this simulation experiment more than once and count the number of observed heads each time. For example, the output below show the results of 100 experiments (of four coin flips) and the number of times each value of heads was observed.
-\vspace{5mm}
-
-```{r, echo = F}
-library(kableExtra)
-number_of_experiments <- 100
-coin_flip_results <- tibble()
-
-set.seed(86)
-for(i in 1:number_of_experiments){
-  coin_flips <- sample(possible_events, size = 4, replace = TRUE)
-  this_result <- tibble(experiment = i, flip = 1:4, outcome = coin_flips)
-  coin_flip_results <- bind_rows(coin_flip_results, this_result)
-}
-
-samp_dist <- coin_flip_results %>%
-  group_by(experiment) %>%
-  summarise(heads = sum(outcome=="H")) %>%
-  group_by(heads) %>%
-  tally()
-
-samp_dist %>% kable()
-
-```
-
-## The sampling distribution
-
-```{r, echo = FALSE}
-samp_dist %>%
-  mutate(probability = n/sum(n)) %>%
-  kable()
-```
-
-A **sampling distribution** is a probability distribution for a statistic based on repeated samples. Here, our random-sample-based statistic is the number of heads in four coin flips.
-
-
-<!-- ## The sampling distribution -->
-
-<!-- Each coin flip (or any experiment with only two outcomes) is called a **Bernoulli trial**. A series of two or more independent Bernoulli trials constitutes a **binomial experiment**: -->
-
-<!-- 1. Each trial can have only two outcomes, often called success and failure. -->
-<!-- 2. The experiment has a specified number of trials, usually denoted by $n$. -->
-<!-- 3. The probability of a success is usually denoted by $p$ and the probability of a failure by $q$; -->
-<!-- thus, the sum of $p$ and $q$ is equal to 1 -->
-<!-- 4. The trials are independent of one another. -->
-<!-- 5. The random variable is defined as the number of successes observed in the $n$ trials. -->
-
-<!-- The sampling distribution of the coin flips example is a **Binomial distribution** with $n = 4$ and $p = 0.5$ -->
 
 ## The expected value of a random variable
 
@@ -551,3 +492,69 @@ ggplot() +
     + Discrete RV = probability mass function
     + Continuous RV = probability density function
 - Probabilities as areas
+
+
+# Observing data and sampling distributions (intro)
+
+
+## Simulating outcomes in R
+
+We can **simulate** coin flips in R using the `sample` function
+
+\tiny
+```{r}
+possible_events <- c("H", "T")
+coin_flips <- sample(possible_events, size = 4, replace = TRUE)
+coin_flips
+```
+
+## Simulating outcomes in R
+
+We can do this simulation experiment more than once and count the number of observed heads each time. For example, the output below show the results of 100 experiments (of four coin flips) and the number of times each value of heads was observed.
+\vspace{5mm}
+
+```{r, echo = F}
+library(kableExtra)
+number_of_experiments <- 100
+coin_flip_results <- tibble()
+
+set.seed(86)
+for(i in 1:number_of_experiments){
+  coin_flips <- sample(possible_events, size = 4, replace = TRUE)
+  this_result <- tibble(experiment = i, flip = 1:4, outcome = coin_flips)
+  coin_flip_results <- bind_rows(coin_flip_results, this_result)
+}
+
+samp_dist <- coin_flip_results %>%
+  group_by(experiment) %>%
+  summarise(heads = sum(outcome=="H")) %>%
+  group_by(heads) %>%
+  tally()
+
+samp_dist %>% kable()
+
+```
+
+## The sampling distribution
+
+```{r, echo = FALSE}
+samp_dist %>%
+  mutate(probability = n/sum(n)) %>%
+  kable()
+```
+
+A **sampling distribution** is a probability distribution for a statistic based on repeated samples. Here, our random-sample-based statistic is the number of heads in four coin flips.
+
+
+<!-- ## The sampling distribution -->
+
+<!-- Each coin flip (or any experiment with only two outcomes) is called a **Bernoulli trial**. A series of two or more independent Bernoulli trials constitutes a **binomial experiment**: -->
+
+<!-- 1. Each trial can have only two outcomes, often called success and failure. -->
+<!-- 2. The experiment has a specified number of trials, usually denoted by $n$. -->
+<!-- 3. The probability of a success is usually denoted by $p$ and the probability of a failure by $q$; -->
+<!-- thus, the sum of $p$ and $q$ is equal to 1 -->
+<!-- 4. The trials are independent of one another. -->
+<!-- 5. The random variable is defined as the number of successes observed in the $n$ trials. -->
+
+<!-- The sampling distribution of the coin flips example is a **Binomial distribution** with $n = 4$ and $p = 0.5$ -->
