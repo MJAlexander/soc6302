@@ -1,0 +1,871 @@
+---
+title: "SOC6302 Statistics for Sociologists"
+author: "Monica Alexander"
+date: "Week 5: Probability and sampling distributions"
+output: 
+  beamer_presentation:
+    slide_level: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, size = '\tiny')
+library(tidyverse)
+```
+
+
+## Where are we at
+
+- Probability concepts
+    + Additive rule, mutually exclusive events, multiplicative rule, independence, complements
+- Probability distributions
+    + Discrete RV = probability mass function
+    + Continuous RV = probability density function
+- Probabilities as areas
+
+
+
+## A continuous probability distribution is just a histogram with infinitely small bins
+
+```{r, echo = FALSE}
+set.seed(76)
+heights <- tibble(height = rnorm(18000, mean = 170, sd = 8))
+heights %>% 
+  ggplot(aes(height)) + 
+  geom_histogram(binwidth = 5, color = "firebrick4", fill = "steelblue4")+
+  ggtitle("Adult heights")
+```
+
+##
+
+```{r, echo = FALSE}
+heights %>% 
+  ggplot(aes(height)) + 
+  geom_histogram(binwidth = 3, color = "firebrick4", fill = "steelblue4")+
+  ggtitle("Adult heights")
+```
+
+##
+
+```{r, echo = FALSE}
+heights %>% 
+  ggplot(aes(height)) + 
+  geom_histogram(binwidth = 2, color = "firebrick4", fill = "steelblue4", aes(y = ..density..))+
+  ggtitle("Adult heights")
+```
+
+## Probability density function
+
+```{r, echo = FALSE}
+ggplot() +
+  stat_function(fun = dnorm,
+                geom = "area",
+                args = list(
+                  mean = 170,
+                  sd = 8
+                ),
+                fill = "steelblue4", color = "firebrick4") +
+  xlim(c(140,200))+
+  ylab("density") + 
+  ggtitle("Adult heights")
+```
+
+
+
+## Probabilities as areas
+
+```{r, echo = FALSE}
+ggplot() +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    color = "firebrick4",
+    alpha = .3,
+    args = list(
+                  mean = 170,
+                  sd = 8
+                )
+  ) +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    args = list(
+                  mean = 170,
+                  sd = 8
+                ),
+    xlim = c(185, 200)
+  ) +
+  ylab("Density")+
+  scale_x_continuous(limits = c(140, 200), breaks = seq(140, 200, by = 15))+
+    ggtitle("Adult heights")
+```
+
+## Probabilities as areas
+
+```{r, echo = FALSE, fig.height=4}
+ggplot() +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    color = "firebrick4",
+    alpha = .3,
+    args = list(
+                  mean = 170,
+                  sd = 8
+                )
+  ) +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    args = list(
+                  mean = 170,
+                  sd = 8
+                ),
+    xlim = c(185, 200)
+  ) +
+  ylab("Density")+
+  scale_x_continuous(limits = c(140, 200), breaks = seq(140, 200, by = 15))+
+    ggtitle("Adult heights")
+```
+
+- The probability that height is greater than 185cm i.e. $P(X > 185)$
+- Like summing up very tiny histogram bins above a certain point
+
+## Probability as areas
+
+Important notes
+
+- The sum of the whole area under the curve is equal to 1 (because we know all probabilities have to sum to one)
+- A value is either greater than or less than/equal to a number
+- So can express probabilities as the complement e.g. $P(X> 185) = 1 - P(X \leq 185)$ 
+
+
+```{r, echo = FALSE, fig.height=3}
+ggplot() +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    color = "firebrick4",
+    alpha = .3,
+    args = list(
+                  mean = 170,
+                  sd = 8
+                )
+  ) +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    args = list(
+                  mean = 170,
+                  sd = 8
+                ),
+    xlim = c(185, 200)
+  ) +
+  ylab("Density")+
+  scale_x_continuous(limits = c(140, 200), breaks = seq(140, 200, by = 15))+
+    ggtitle("Adult heights")
+```
+
+
+## Where are we going
+
+# The normal distribution
+
+
+## The normal distribution
+
+- One of the most important continuous probability distributions 
+- Is described by the formula
+
+$$
+f(x)=\frac{1}{\sqrt{2 \pi \sigma^{2}}} e^{-\frac{1}{2} \frac{(x-\mu)^{2}}{\sigma^{2}}}
+$$
+
+- The shape is determined by two **parameters**, $\mu$ and $\sigma$
+- If we were to plot $f(x)$ as a function of $x$, we would obtain a normal distribution that would be centered at whatever value of $\mu$ we specified, and it would have a standard deviation equal to $\sigma$. 
+
+##
+
+```{r, echo = FALSE}
+ggplot() +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    aes(fill = "mu = 170, sd = 8"),
+    color = "black",
+    alpha = .3,
+    args = list(
+                  mean = 170,
+                  sd = 8
+                ))+
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    aes(fill = "mu = 170, sd = 4"),
+    color = "black",
+    alpha = .2,
+    args = list(
+                  mean = 170,
+                  sd = 4
+                ))+
+    stat_function(
+    fun = dnorm,
+    geom = "area",
+    aes(fill = "mu = 185, sd = 4"),
+    color = "black",
+    alpha = .2,
+    args = list(
+                  mean = 185,
+                  sd = 4
+                ))+
+  scale_x_continuous(limits = c(140, 210), breaks = seq(140, 200, by = 15))+
+  scale_fill_brewer(name="", palette = "Set1")
+```
+
+## The normal distribution
+
+- Many variables naturally resemble the normal distribution (or can be transformed to be so)
+- Height, weight, intelligence...
+- Strong relationships with other distributions 
+- Many sample statistics are normally distributed (more later)
+
+## The standard normal distribution
+
+A special case of the normal distribution with $\mu = 0$ and $\sigma = 1$.
+
+```{r, echo = FALSE, fig.height = 5}
+ggplot() +
+  stat_function(fun = dnorm,
+                geom = "area",
+                args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+                fill = NA, color = "firebrick4", alpha = 0.4, lwd = 1.2) +
+  scale_x_continuous(limits = c(-4,4), breaks = -4:4)+
+  ylab("density") 
+```
+
+## The standard normal distribution
+
+- ~68% of area within 1 standard deviation
+
+
+```{r, echo = FALSE, fig.height = 5}
+ggplot() +
+  stat_function(fun = dnorm,
+                geom = "area",
+                args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+                fill = NA, color = "firebrick4", alpha = 0.4, lwd = 1.2) +
+  scale_x_continuous(limits = c(-4,4), breaks = -4:4)+
+  ylab("density") +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    alpha = 0.5,
+    args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+    xlim = c(-1, 1)
+  )
+```
+
+
+## The standard normal distribution
+
+- ~95% of the area within 2 standard deviations
+
+```{r, echo = FALSE, fig.height = 5}
+ggplot() +
+  stat_function(fun = dnorm,
+                geom = "area",
+                args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+                fill = NA, color = "firebrick4", alpha = 0.4, lwd = 1.2) +
+  scale_x_continuous(limits = c(-4,4), breaks = -4:4)+
+  ylab("density")+
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    alpha = 0.5,
+    args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+    xlim = c(-2, 2)
+  ) +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    alpha = 0.8,
+    args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+    xlim = c(-1, 1)
+  )
+```
+
+## Any normal distribution can be transformed into the standard normal
+
+Say $X$ is normally distributed with mean $\mu$ and variance $\sigma^2$. We can write this as 
+
+$$
+X \sim N(\mu, \sigma^2)
+$$
+We can transform $X$ using the **$z$-transformation**
+
+$$
+\frac{X - \mu}{\sigma}
+$$
+Call this transformed version $Z$ i.e. $Z = \frac{X - \mu}{\sigma}$. Then
+
+$$
+Z \sim N(0,1)
+$$
+we can refer to the transformed version as **Z-scores**. 
+
+<!-- ## Steps -->
+
+<!-- $$ -->
+<!-- X \sim N(\mu, \sigma^2) -->
+<!-- $$ -->
+<!-- $$ -->
+<!-- X - \mu \sim N(0, \sigma^2) -->
+<!-- $$ -->
+<!-- because $E(X+c) = E(X)+c$ -->
+
+<!-- $$ -->
+<!-- \frac{X - \mu}{\sigma} \sim N(0, 1) -->
+<!-- $$ -->
+
+<!-- because $Var(cX) = c^2Var(X)$ -->
+
+## Z-scores 
+
+- Z-scores tell you the number of standard deviations by which the value of a raw score is above or below the mean value.
+- In the heights example, the mean $\mu = 170$ and standard deviation $\sigma = 8$.
+
+Rohan is 180cm. What is his Z-score?
+
+$$
+Z = \frac{180-170}{8} = 1.25
+$$
+So Rohan is 1.25 standard deviations above the mean height. 
+
+- Monica is 168cm, so her Z-score is -0.25. So she is 0.25 standard deviations below the mean height. 
+
+## Why calculate Z scores?
+
+```{r, echo = FALSE}
+ggplot() +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    aes(fill = "mu = 170, sd = 8"),
+    color = "black",
+    alpha = .3,
+    args = list(
+                  mean = 170,
+                  sd = 8
+                ))+
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    aes(fill = "mu = 170, sd = 4"),
+    color = "black",
+    alpha = .2,
+    args = list(
+                  mean = 170,
+                  sd = 4
+                ))+
+    stat_function(
+    fun = dnorm,
+    geom = "area",
+    aes(fill = "mu = 185, sd = 4"),
+    color = "black",
+    alpha = .2,
+    args = list(
+                  mean = 185,
+                  sd = 4
+                ))+
+  scale_x_continuous(limits = c(140, 210), breaks = seq(140, 200, by = 15))+
+  scale_fill_brewer(name="", palette = "Set1")
+```
+
+- Z-score for person 165cm tall from red v blue v green distribution?
+
+
+## Z-scores
+
+```{r, echo = FALSE, fig.height = 3}
+ggplot() +
+  stat_function(fun = dnorm,
+                geom = "area",
+                args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+                fill = NA, color = "firebrick4", alpha = 0.4, lwd = 1.2) +
+  scale_x_continuous(limits = c(-4,4), breaks = -4:4)+
+  ylab("density")+
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    alpha = 0.5,
+    args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+    xlim = c(-1.25, 1.25)
+  ) 
+```
+
+- Recall that ~95% of the area was within 2 standard deviations. 
+- We can flip this and ask what proportion of the area of a standard normal is within 1.25 standard deviations?
+- The answer is ~79%
+
+## Z-scores 
+
+- ~79% of the area is within 1.25 standard deviations
+- Alternative interpretation: If we randomly draw a value from a standard normal distribution, the value will be between [-1.25,1.25] 79% of the time. 
+- Conversely, 21% of values will fall outside that range
+
+```{r, echo = FALSE, fig.height = 3}
+ggplot() +
+  stat_function(fun = dnorm,
+                geom = "area",
+                args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+                fill = NA, color = "firebrick4", alpha = 0.4, lwd = 1.2) +
+  scale_x_continuous(limits = c(-4,4), breaks = -4:4)+
+  ylab("density")+
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    alpha = 0.5,
+    args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+    xlim = c(-4, -1.25)
+  ) +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    alpha = 0.5,
+    args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+    xlim = c(1.25, 4)
+  )
+```
+
+
+
+## Z-scores
+
+- If the Z-score is small (i.e. the absolute value is close to zero), then the observed value is likely to come from that distribution
+- E.g. Monica's Z-score was -0.25
+    + 40% of the total area falls outside the [-0.25, 0.25] range
+    + So it would be quite likely to observe outside this range, just by chance
+
+
+```{r, echo = FALSE, fig.height = 3}
+ggplot() +
+  stat_function(fun = dnorm,
+                geom = "area",
+                args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+                fill = NA, color = "firebrick4", alpha = 0.4, lwd = 1.2) +
+  scale_x_continuous(limits = c(-4,4), breaks = -4:4)+
+  ylab("density")+
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    alpha = 0.5,
+    args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+    xlim = c(-4, -0.25)
+  ) +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    alpha = 0.5,
+    args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+    xlim = c(0.25, 4)
+  )
+```
+
+- In contrast it would be less likely to observe something outside the range of Rohan's Z-score [-1.25, 1.25]
+- If we observed an even bigger Z-score, it would be even less likely
+
+
+
+<!-- ## Z-scores as critical values and hypothesis testing -->
+
+<!-- We can formalize these ideas through **hypothesis testing** -->
+
+<!-- - Say we observe a person's height, and it's equal to 196cm. -->
+<!-- - We also know that the underlying distribution has a mean of 170cm and a standard deviation of 8cm. -->
+<!-- - We want to test to see whether this person's height is **significantly different** from the underlying distribution's mean  -->
+
+<!-- The **null hypothesis** is  -->
+
+<!-- $$ -->
+<!-- H_0 -->
+<!-- $$ -->
+
+## Finding areas under the curve using R
+
+You can find the area under a normal curve in R using the `pnorm` function, which returns the cumulative probability from $-\infty$ to the value supplied to the `pnorm` function. 
+
+For example, find the area below z = -1.25:
+
+\tiny
+```{r}
+pnorm(-1.25)
+# note that this is short for pnorm(-1.25, mu = 0, sd = 1)
+```
+
+\normalsize
+
+This corresponds to
+
+```{r, echo = FALSE, fig.height = 3}
+ggplot() +
+  stat_function(fun = dnorm,
+                geom = "area",
+                args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+                fill = NA, color = "firebrick4", alpha = 0.4, lwd = 1.2) +
+  scale_x_continuous(limits = c(-4,4), breaks = -4:4)+
+  ylab("density")+
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    alpha = 0.5,
+    args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+    xlim = c(-4, -1.25)
+  ) 
+```
+
+
+
+## Finding areas under the curve using R
+
+To find the area above 1.25:
+
+\tiny
+```{r}
+1-pnorm(1.25)
+# or 
+# pnorm(1.25, lower.tail = FALSE)
+```
+
+\normalsize
+
+This corresponds to
+
+```{r, echo = FALSE, fig.height = 3}
+ggplot() +
+  stat_function(fun = dnorm,
+                geom = "area",
+                args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+                fill = NA, color = "firebrick4", alpha = 0.4, lwd = 1.2) +
+  scale_x_continuous(limits = c(-4,4), breaks = -4:4)+
+  ylab("density")+
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    alpha = 0.5,
+    args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+    xlim = c(1.25, 4)
+  ) 
+```
+
+
+
+## Finding areas under the curve using R
+
+To find the area between -1.25 and 1.25
+
+\tiny
+```{r}
+pnorm(1.25) - pnorm(-1.25)
+```
+
+\normalsize
+
+This corresponds to
+
+```{r, echo = FALSE, fig.height = 3}
+ggplot() +
+  stat_function(fun = dnorm,
+                geom = "area",
+                args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+                fill = NA, color = "firebrick4", alpha = 0.4, lwd = 1.2) +
+  scale_x_continuous(limits = c(-4,4), breaks = -4:4)+
+  ylab("density")+
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    fill = "steelblue4",
+    alpha = 0.5,
+    args = list(
+                  mean = 0,
+                  sd = 1
+                ),
+    xlim = c(-1.25, 1.25)
+  ) 
+```
+
+
+# Remember that probability is just counting!
+
+## Probability is just counting 
+
+- Last week when we first started looking at probability, we were just counting things
+- We can approximate Normal probabilities by counting the number of observations above/below a value
+- Imagine we had a dataset of people's heights 
+- Calculate Z scores, then calculate the proportion of observations below a Z score of -1.25
+- This would approximate P(Z<-1.25)
+
+## Back to simulation
+
+- Last week we were simulating coin flips using the sample function
+- We can also simulate 'draws' (i.e. observations) from a Normal distribution
+
+
+## Example simulation in R
+
+- We can generate random draws from a normal distribution in R using the `rnorm` function.
+- For example, the following code generates 1000 observations from a standard normal 
+
+\tiny
+```{r}
+set.seed(1889) # makes sure the random numbers generated are the same each time
+# rnorm allows you to simulate values from a normal distribution
+z_scores <- rnorm(n = 1000, mean = 0, sd = 1)
+z_scores[1:10] # show the first ten draws
+```
+
+## Calculating probabilities by summing
+
+We can then calculate what proportion of the simulated values are above a Z-score of 1.25 or below -1.25:
+
+```{r}
+(sum(z_scores< -1.25) + sum(z_scores> 1.25))/1000
+```
+
+Note that this is very similar to
+
+```{r}
+pnorm(-1.25) + 1- pnorm(1.25)
+```
+
+
+# Sampling distributions and the central limit theorem
+
+## Why do we care about the Normal distribution so much
+
+- It's just one distribution
+- It tends to over-simplify the real distribution of outcomes/variables
+
+BUT it turns out that the distribution of summary statistics that we're interested in (e.g. means) tend towards being Normal 
+
+- this is important for regression and inference
+
+## Sampling distributions 
+
+A **sampling distribution** is a probability distribution for a statistic based on repeated samples.
+
+Say we are interested in taking a random sample of people's heights, $X$ and calculating the mean height for that sample. So our statistic of interest is the mean height, $\bar{X}$.
+
+
+## Randomly sampling heights
+
+
+We first take a random sample of 12 people and get the following heights
+
+\tiny
+```{r, echo = FALSE}
+heights_1 <- rnorm(12, mean = 170, sd = 8)
+round(heights_1, 1)
+```
+\normalsize
+The observed mean height of this sample is `r round(mean(heights_1),1)`.
+
+We take a random sample of another 12 people and get the following heights:
+
+\tiny
+```{r, echo = FALSE}
+heights_1 <- rnorm(12, mean = 170, sd = 8)
+round(heights_1, 1)
+```
+
+\normalsize
+The observed mean height of this sample is `r round(mean(heights_1),1)`.
+
+## Randomly sampling heights
+
+Say that I keep doing this process again and again and again, and end up with 100 observations of mean height. I can plot a histogram of these means:
+
+```{r, echo = FALSE, fig.height = 5}
+
+N <- 100 
+heights_0 <- tibble()
+
+for(i in 1:N){
+  these_heights = tibble(sample = i, heights = rnorm(12, 170, 8))
+  heights_0 <- bind_rows(heights_0, these_heights)
+}
+
+heights_0 %>% 
+  group_by(sample) %>% 
+  summarise(mean_height = mean(heights)) %>% 
+  ggplot(aes(mean_height)) + geom_histogram(color = "navy", fill = "lightblue")
+
+```
+
+## Randomly sampling heights
+
+Okay, what if I take 1000 samples. I plot a histogram of the means again
+
+```{r, echo = FALSE, fig.height = 5}
+
+N <- 1000
+heights <- tibble()
+
+for(i in 1:N){
+  these_heights = tibble(sample = i, heights = rnorm(12, 170, 8))
+  heights <- bind_rows(heights, these_heights)
+}
+
+heights %>% 
+  group_by(sample) %>% 
+  summarise(mean_height = mean(heights)) %>% 
+  ggplot(aes(mean_height)) + geom_histogram(color = "navy", fill = "lightblue")
+
+```
+What do you notice?
+
+## Randomly sampling heights
+
+What about 10,000 samples?
+
+```{r, echo = FALSE, fig.height = 5}
+
+N <- 10000
+heights_2 <- tibble()
+
+for(i in 1:N){
+  these_heights = tibble(sample = i, heights = rnorm(12, 170, 8))
+  heights_2 <- bind_rows(heights_2, these_heights)
+}
+
+heights_2 %>% 
+  group_by(sample) %>% 
+  summarise(mean_height = mean(heights)) %>% 
+  ggplot(aes(mean_height)) + geom_histogram(color = "navy", fill = "lightblue")
+
+```
+
+## The central limit theorem
+
+The distribution of the sum (or mean) of a set of independent random variables will **tend towards** a normal distribution. 
+
+- "tend towards" means as the number of observations of the sum or mean gets larger, the distribution will become more normal
+- The central limit theorem holds even if the original variables themselves are not normally distributed. 
+
+
+## The central limit theorem
+
+For a random variable $X$ with $E(X) = \mu$ and $Var(X) = \sigma^2$, the central limit theorem results in the following distribution for the mean $\bar{X}$:
+
+$$
+\bar{X} \sim N(\mu, \frac{\sigma^2}{n})
+$$
+
+What does this mean?
+
+- The mean $\bar{X}$ will be centered at the same value as $X$
+- The variance of $\bar{X}$ depends on the variance of the original random variable $X$ and also the number of samples of the mean we have, $n$.
+
+The quantity $\frac{\sigma}{\sqrt n}$ is also called the **standard error of the mean**.
+
+## Sampling heights
+
+Before, we were repeatedly taking a random sample of 12 heights. 
+
+When we did this 100 times, we had 100 observations of $\bar{X}$. The mean was `r round(mean(heights_0$heights))` and the standard error of the mean was `r round(sd(heights_0$heights), 1)/100`.
+
+When we did this 10000 times, we had 100 observations of $\bar{X}$. The mean was `r round(mean(heights_2$heights))` and the standard error of the mean was `r round(sd(heights_2$heights), 1)/10000`.
+
+So the more samples we have, the more sure we are of our estimate of the population mean $\mu$
+
+## The random variables need not be Normal distributed!
+
+- In the above example, original heights $X$ were Normal distributed, but that isn't required for CLT to hold
+- For any sequence of random variables ${X_1, \dots, X_n}$ that are drawn randomly from a distribution of expected value $\mu$ and variance $\sigma^2$
+- We can calculate the sample average 
+$$
+\bar{X}_n = \frac{X_1 + \dots + X_n}{n}
+$$
+- For large enough $n$ the distribution of $\bar{X}_n$ gets arbitrarily close to the Normal distribution with mean $\mu$ and variance $\sigma^2/n$.
+
+
+
+## Summary
+
+- Normal distribution
+- Standard Normal distribution 
+- Z-scores
+- Probabilities of observation a normal variable in a certain range
+- Sampling distribution for sample mean
+- Central Limit Theorem
