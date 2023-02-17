@@ -1,0 +1,231 @@
+---
+title: "SOC6302 Winter 2023"
+author: "Assignment 2"
+date: "Due date: Friday 10 March, 11:59pm"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = FALSE)
+```
+
+# Details
+
+There are **100 points** in total. 
+
+You will need to submit both your answers to the questions and accompanying R code. You should submit:
+
+- your Quarto file; and
+- the knitted PDF resulting from your Quarto file. 
+
+Please submit both files via Quercus. 
+
+Remember to:
+
+- Label the answers to each question 
+- Label any graphs clearly with suitable axis labels and titles
+- Comment your code so that it is easy to understand
+
+\newpage 
+
+# Question 1 (40 points)
+
+This question relates to the birthweight dataset, which lists the birth weight (in grams) of sample of 500 babies. 
+
+a)  Plot a histogram of the birthweights and comment briefly. 
+b) Calculate the mean, median, standard deviation, and range of the birthweights.
+c) Assume that the sample of 500 babies are drawn from a Normal distribution with mean and standard deviation of what you calculated in part b). 
+
+    i) What is the probability of observing a baby that has low birthweight (formally defined as less than 2500g)?
+    ii) What is the probability of observing a baby that has a birthweight of more than 3700g?
+    iii) What is the probability of observing a birthweight between 3400g and 3500g?
+
+d) 
+
+    i) How many standard deviations above the mean is a baby that weighs 4000g at birth?
+    ii) We are told a baby has a Z score of 0.13. What is the baby's weight?
+
+e) Suppose we observe 15 more birthweights (listed below). Discuss briefly with the aid of calculations and/or graphs whether you think these 15 babies are likely to be sampled from the same population as above. 
+
+
+```{r}
+ # set.seed(853)
+ # bws <- rnorm(1:500, mean = 3500, sd = 400)
+ # db <- tibble(baby_id = 1:500, birthweight = round(bws))
+ # write_csv(db, here("data/birthweight.csv"))
+
+library(tidyverse)
+library(here)
+
+db <- read_csv(here("data/birthweight.csv"))
+
+db %>% 
+  ggplot(aes(birthweight)) + geom_histogram()
+
+db %>% 
+  summarize(mean(birthweight),
+            sd(birthweight),
+            median(birthweight))
+
+max(db$birthweight) - min(db$birthweight)
+
+mean_bw <- mean(db$birthweight)
+sd_bw <- sd(db$birthweight)
+
+pnorm(2500, mean = mean_bw, sd = sd_bw)
+1-pnorm(3700, mean = mean_bw, sd = sd_bw)
+pnorm(3500, mean = mean_bw, sd = sd_bw) - pnorm(3400, mean = mean_bw, sd = sd_bw)
+
+
+(4000 - mean_bw)/sd_bw
+
+0.13*sd_bw+ mean_bw
+
+# how I got the last question
+set.seed(098)
+bws <- round(rnorm(15, mean = 4000, sd =200))
+
+```
+
+```{r, eval = TRUE, echo = FALSE, include = TRUE}
+tibble(birthweight = bws) %>% kableExtra::kable(booktabs = TRUE)
+```
+
+
+```{r}
+# mean and SD are pretty different
+as_tibble(bws) %>% 
+  summarise(mean(value), sd(value))
+
+# hard to see with histogram but seems like it's centered at something higher
+ggplot(as_tibble(bws), aes(value)) + geom_histogram(bins = 6)
+
+# these are pretty different from 0 and 1
+z_scores <- (bws - mean_bw)/sd_bw
+mean(z_scores)
+sd(z_scores)
+
+# probability of seeing something as extreme as the mean based on the original distribution is 20%
+(1-pnorm((mean(bws) - mean_bw)/sd_bw))*2
+
+# there's no one right answer here, they should conclude they are probably unlikely to come from the same distribution
+# and do a few calculations
+
+```
+
+
+\newpage
+
+# Question 2 (20 points)
+
+The following picture is a sheepdog that looks like a mop. 
+
+\begin{figure}
+\centering
+\includegraphics[width = 0.4\textwidth]{dog.png}
+\end{figure}
+
+You are interested in seeing what Toronto residents think this is a picture of. You randomly sample 100 residents, show them the picture for 2 seconds, and then ask them whether they think it is a picture of a sheepdog or a mop. 
+
+a) Assume the true proportion of people believing the picture is a sheepdog is 0.8. Simulate your data as specified above. Set the seed to be 675 (i.e. before simulating data, please type `set.seed(675)`). What is the observed proportion of people who think the picture is a sheep dog?
+b) Calculate and interpret a 95% confidence interval for the observed proportion.
+c) Calculate and interpret a 90% confidence interval for the observed proportion.
+
+
+```{r}
+possible_outcomes <- c(1,0)
+set.seed(675)
+samp <- sample(possible_outcomes, 100, replace = TRUE, prob = c(0.8, 0.2))
+prop <- mean(samp)
+se <- sqrt(prop*(1-prop)/100)
+se
+lower <- prop - 1.96*se
+upper <- prop + 1.96*se
+lower; upper
+
+lower <- prop - abs(qnorm(0.05))*se
+upper <- prop + abs(qnorm(0.05))*se
+lower; upper
+```
+
+
+
+\newpage
+
+# Question 3 (40 points)
+
+My 18-month old seems quite tall for his age -- he is about 87cm. I decide to investigate heights of other toddlers the same age to see if he is indeed taller than average. 
+
+Suppose the true mean height of 18-month olds $\mu$ is 80cm and the true standard deviation $\sigma$ is 3. I do an experiment take a random sample of 20 toddlers and record their height. I repeat this experiment 10 times, so I have 10 samples of 20 heights.
+
+a) Simulate these data in R, assuming the sample is drawn from a normal distribution with the true values of $\mu$ and $\sigma$. Before simulating data, please type `set.seed(853)`. 
+b) Calculate the mean height recorded in each of the 10 experiments, and plot these mean heights as a histogram.
+c) Repeat b) and c) but now instead of 10 experiments, assume I have 1000 experiments (you will need to set the seed again). Interpret the difference in the histograms.
+
+Now suppose I sample 10 toddlers and observe a mean height of 80.5cm and a standard deviation of 2.4cm. 
+
+d) Construct a two-tailed hypothesis test to test whether my toddler's height is different from the general population of toddlers. Would the null hypothesis be rejected at the 5% level? For this question you need to define your hypotheses, do the appropriate calculations, and interpret your results. 
+
+
+
+
+```{r}
+n <- 20
+mu <- 80
+sigma <- 3
+n_experiments <- 10
+
+set.seed(853)
+child_heights <- tibble()
+for(i in 1:n_experiments){
+  child_heights <- bind_rows(child_heights, tibble(experiment = i, child = 1:n, height = rnorm(n, mu, sigma)))
+}
+
+
+child_heights %>% 
+  group_by(experiment) %>% 
+  summarise(mean_height = mean(height),
+            sd_height = sd(height)) %>% 
+  ggplot(aes(mean_height)) + geom_histogram()
+
+n_experiments <- 1000
+
+set.seed(853)
+child_heights <- tibble()
+for(i in 1:n_experiments){
+  child_heights <- bind_rows(child_heights, tibble(experiment = i, child = 1:n, height = rnorm(n, mu, sigma)))
+}
+
+
+child_heights %>% 
+  group_by(experiment) %>% 
+  summarise(mean_height = mean(height)) %>% 
+  ggplot(aes(mean_height)) + geom_histogram()
+
+
+x_bar <- 80.5
+sd <- 2.4
+se <- 2.4/sqrt(10)
+
+t_score <- (87 - x_bar)/se
+
+pt(-1*t_score, df = 9)*2
+
+
+```
+
+
+\newpage
+
+# Review Questions (not to hand in)
+
+- True or False: the range is always larger than the interquartile range. 
+- Is the mean always equal to the median? If not, when are they equal?
+- I have a dataset of marathon times of people who completed the New York marathon. In the dataset I also have information on: age, hours trained, and whether or not the runner had completed the New York marathon previously. Describe three graphs and/or summary measures to explore patterns in this dataset. 
+- In a standard set of playing cards, what's the probability of drawing a red card? What's the probability of drawing a Queen? Given I know the card is a black card, what's the probability that it's a club?
+- I flip a coin twice. What's the probability of seeing two heads? What's the probability of seeing at least one head?
+- Which is larger, a 95% confidence interval or a 99% confidence interval?
+- True or False: In a standard normal distribution, the probability of being above 3.5 standard deviations above the mean is equal to the probability of being 2.5 standard deviations below the mean.
+- I like knitting and I am 36 years old. Pretend I know the distribution of ages of people who knit in Australia versus people who knit in Canada. The standard deviation of both distributions is the same. In Australia my Z score is -2.5. In Canada my Z score is -1. Is the mean age of knitters older in Australia or Canada?
+- I like knitting and I am 36 years old. Pretend I know the distribution of ages of people who knit in Australia versus people who knit in Canada. The mean of both distributions is the same. In Australia my Z score is -2.5. In Canada my Z score is -1. Is the standard deviation age of knitters larger in Australia or Canada?
+

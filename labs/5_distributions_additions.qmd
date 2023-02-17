@@ -1,0 +1,277 @@
+---
+title: "Week 5: Distributions"
+author: "SOC6302 Winter 2023"
+format: 
+  pdf:
+    number-sections: true
+editor: visual
+execute:
+  message: false
+  warning: false
+---
+
+# By the end of this lab you should know
+
+-   how to calculate z-scores
+-   how to calculate probabilities of normal distribution
+-   how to simulate from a normal distribution
+-   for loops
+-   how to plot simulation results as a histogram
+
+# Call the packages we need
+
+In most labs we are going to use functions in the tidyverse package, so we load the package first.
+
+```{r}
+library(tidyverse) # need to load in this to define a tibble!
+```
+
+# Calculating z-scores
+
+Let's look at three different heights: Monica's is 168cm, Rohan's is 180cm, and Teddy's is 87cm. Define these as variables
+
+```{r}
+m_height <- 168
+r_height <- 180
+t_height <- 87
+```
+
+Now pretend we know that the distribution of adult heights in the population has a mean of 170cm and a standard deviation of 8cm. Define these parameters as variables too:
+
+```{r}
+mu <- 170
+sigma <- 8
+```
+
+To calculate the z-scores, we just follow the standardization formula given in the slides. 
+
+$$
+Z  = \frac{X - \mu}{\sigma}
+$$
+
+Can define these as new variables. NOTE: order of operations means we need to put parentheses around the numerator:
+
+```{r}
+m_z_score <- (m_height - mu)/sigma
+r_z_score <- (r_height - mu)/sigma
+t_z_score <- (t_height - mu)/sigma
+
+m_z_score
+r_z_score
+t_z_score
+```
+
+## Questions
+
+Take a look at these z-scores. Who is closest to the mean? What's the interpretation of Teddy's z-score? Intuitively, how likely do you think Teddy is a fully grown adult, based on the z-score?
+
+- Closest to the mean: Monica
+- Interpretation: Teddy's height is 10.375 standard deviations lower than the mean
+- Unlikely that he's a full-grown adult
+
+# Calculating probabilities
+
+We can calculate the probability of observing a value less than a specified value in a normal distribution using the `pnorm` function. For example, let's calculate the probability of observing a value less than Monica's z-score:
+
+$$
+P(Z \leq -0.25) 
+$$
+
+```{r}
+?pnorm
+pnorm(q = m_z_score)
+```
+
+Note: the default of `pnorm` is to return P(X \<= x), i.e. P(any value \<= the observed value). To calculate the probability than any observed value is **greater than** the observed value, you can change the argument in the function to be `lower.tail = FALSE`
+
+$$
+P(Z>-0.25)
+$$
+
+```{r}
+pnorm(q = m_z_score, 
+      mean = 0, sd = 1, 
+      lower.tail = FALSE)
+```
+
+Alternatively, we know that the sum of all probabilities has to equal 1, so could calculate
+
+$$
+P(Z \leq -0.25) + P(Z > 0.25) = 1
+$$
+
+```{r}
+1 - pnorm(q = m_z_score, mean = 0, sd = 1)
+```
+
+We also need not use z-score, could get the probability of observing a height less than Monica's by changing the arguments for mean and standard deviation in the function:
+
+```{r}
+pnorm(q = m_height, mean = mu, sd = sigma)
+```
+
+To get the probability that a value is between two values, take the difference e.g probability that someone's height is between 190 and 200cm
+
+```{r}
+pnorm(q = 200, mean = mu, sd = sigma) - pnorm(q = 190, mean = mu, sd = sigma)
+```
+
+## Questions
+
+-   Calculate the probability of observing a height between Rohan and Monica's
+
+```{r}
+pnorm(q = r_height, mean = mu, sd = sigma) - pnorm(q = m_height, mean = mu, sd = sigma)
+```
+
+-   Calculate the probability of observing a height that is greater than Teddy's
+
+```{r}
+1-pnorm(t_height, mean = mu, sd = sigma)
+```
+
+
+# Simulating from a normal distribution
+
+We can simulate hypothetical values from a normal distribution using the `rnorm` function. For example, let's simulate 6 different heights from our underlying distribution of adult heights:
+
+```{r}
+rnorm(n = 6, mean = mu, sd = sigma)
+```
+
+Note: execute the above code over and over and notice that the numbers change (they are random draws). To make them the same each time we execute the code, you can set a seed, which tells the computer where to start its random generation.
+
+```{r}
+set.seed(853)
+rnorm(n = 6, mean = mu, sd = sigma)
+```
+
+Run this over and over and notice the numbers don't change. The number in the `set.seed` function can be anything you want.
+
+Now let's simulation 100 heights, and save these in a tibble.
+
+```{r}
+set.seed(541)
+sample_heights <- tibble(person_number = 1:100, # from 1 to 100
+                         height = rnorm(100, mean = mu, sd = sigma))
+sample_heights
+```
+
+Now plot these heights as a histogram (based on skills from last week)
+
+```{r}
+ggplot(data = sample_heights, aes(height)) + 
+  geom_histogram(color = "navy", fill = "firebrick4") 
+```
+
+## Question
+
+Calculate the mean and standard deviation of the heights in `sample_heights`
+
+```{r}
+sample_heights |> 
+  summarize(mean = mean(height),
+            sd = sd(height))
+```
+
+
+# More than one sample
+
+We have one set of 100 heights. Now pretend we wanted another sample of 100 heights. We could do exactly the same thing, and call our second dataframe `sample_heights_2`, for example
+
+```{r}
+sample_heights_2 <- tibble(person_number = 1:100, 
+                           height = rnorm(100, mean = mu, sd = sigma))
+```
+
+We could create an extra column called sample_number that would tell us which sample the person's height was drawn from, and then join `sample_heights` and `sample_heights_2` together into the one dataframe/tibble using a function called `bind_rows`
+
+```{r}
+sample_heights <- sample_heights |> mutate(sample_number = 1) #first set of samples
+sample_heights_2 <- sample_heights_2 |> mutate(sample_number = 2) # secon set of sample
+
+all_sample_heights <- bind_rows(sample_heights, sample_heights_2)
+```
+
+## Questions
+
+-   Take a look at `all_sample_heights` and make sure you understand what happened.
+-   Calculate the mean and standard deviation of each sample of heights (hint: use `group_by`)
+
+```{r}
+all_sample_heights |> 
+  group_by(sample_number) |> 
+  summarize(mean = mean(height),
+            sd = sd(height))
+```
+
+
+# Many, many samples
+
+The above is okay, but say I wanted to get 1000 samples like this. This is a lot of copy pasting and would be very time consuming. Instead, we can use a for loops to get R to do this for us automatically.
+
+For loops are based on looping over an iterating variable (usually called `i`) and telling R to do something each time. The following code tells R to loop over `i` 3 times and each time print out a little message, which changes based on the loop
+
+```{r}
+for(i in 1:3){ # for iterator i going from number 1 to number 3
+  print(paste("Hello, you are in loop", i))
+}
+```
+
+We could do the same thing N times, where N is a variable we create and can change (below N is defined as 10)
+
+```{r}
+N <- 10
+
+for(i in 1:N){ # for iterator i going from number 1 to N
+  print(paste("Hello, you are in loop", i))
+}
+```
+
+For loops are useful if you want to do the same thing over and over just changing something slightly. In our case, that's exactly what we want to do -- sample 100 people over and over (1000 times), and just note down the sample number.
+
+Here's the code to do it twice. Firstly BEFORE the loop, I'm defining an empty tibble to store my results in. Then within the loops for each iteration
+
+-   Create a sample of 100 people, and define the column `sample_number` based on the iteration number i
+-   Bind that sample onto the tibble that all results are stored in
+
+```{r}
+
+sample_heights <- tibble() # define an empty data frame to store our results in
+
+for(i in 1:1000){ # for i going to 1 to 1000
+  
+  # creating a data frame with 100 random samples and sample number column
+  this_sample <- tibble(person_number = 1:100, 
+                        height = rnorm(100, mean = mu, sd = sigma), 
+                        sample_number = i)
+  # take this new sample, and add it on to our existing samples
+  sample_heights <- bind_rows(sample_heights, this_sample)
+}
+
+sample_heights
+
+```
+
+## Questions
+
+-   Alter the code above to do this 1000 times
+-   Calculate the mean height for each sample
+
+```{r}
+mean_heights <- sample_heights |> 
+  group_by(sample_number) |> 
+  summarize(mean = mean(height))
+
+mean_heights
+```
+
+
+-   Plot the means as a histogram
+
+
+```{r}
+ggplot(data = mean_heights, aes(mean))+
+  geom_histogram()
+```
+
