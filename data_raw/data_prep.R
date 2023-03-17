@@ -97,4 +97,4 @@ drc<- d |>
          ) |> 
   mutate(age = as.numeric(age))
 
-write_csv(dr, file = "data/census.csv")
+write_csv(drc |> select(-perwt), file = "data/census.csv")

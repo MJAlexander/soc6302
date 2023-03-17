@@ -1,0 +1,162 @@
+---
+title: "Week 8: Simple linear regression"
+author: "SOC6302 Winter 2023"
+format: 
+  pdf:
+    number-sections: true
+execute:
+  message: false
+  warning: false
+---
+
+
+# By the end of this lab you should know 
+
+- How to estimate regression coefficients values "by hand" using the tidyverse functions
+- How to use `lm` to get estimated coefficients 
+- How to calculate an estimated outcome (Y) based on a particular value of an independent variable (X) and estimated regression coefficients
+- How to plot a fitted SLR line on a scatter plot
+
+
+
+
+Note that throughout this file, formulas and Math symbols are written in "MathTex", which looks funny in the RMarkdown file (surrounded by purple dollar signs) but once you render the document the math will be more readable. 
+
+# Read in, prepare, plot the data
+
+We will be using the country indicators dataset again, and exploring the relationship between the total fertility rate (TFR) and child mortality in 2017. 
+
+
+```{r}
+library(tidyverse)
+country_ind <- read_csv("../data/country_indicators.csv") 
+```
+
+
+## Filter to just be 2017
+
+```{r}
+country_ind_2017 <- country_ind  |>  filter(year==2017)
+```
+
+## Look at the observed relationship between TFR and child mortality
+
+```{r}
+ggplot(country_ind_2017, aes(tfr, child_mort)) + 
+  geom_point()+
+  labs(title = "Scatter plot of child mortality versus TFR", 
+       x = "Total fertility rate (births/woman)", y = "child mortality (deaths per 1000 births)")
+```
+
+
+# Estimating the regression coefficients by hand
+
+Formulas for $\beta_1$ and $\beta_0$ are below. 
+
+
+$$
+\hat{\beta}_{1}=\frac{\sum_{i}\left(Y_{i}-\bar{Y}_{i}\right)\left(X_{i}-\bar{X}_{i}\right)}{\sum_{i}\left(X_{i}-\bar{X}_{i}\right)^{2}}
+$$
+
+$$
+\hat{\beta}_{0}=\bar{Y}_{i}-\widehat{\beta}_{1} \bar{X}_{i}
+$$
+So we need to calculate using `mutate`:
+
+- the each covariance element
+- each variance of X element
+
+The sum these using `summarize` to calculate the formulas for the regression coefficients
+
+## Question
+
+Which variable is X and which is Y?
+
+## Calculating regression coefficients
+
+```{r}
+country_ind_2017 <- country_ind_2017 |> 
+  mutate(covar_xy = (child_mort - mean(child_mort))*(tfr - mean(tfr)),
+         var_x = (tfr - mean(tfr))^2)
+```
+
+```{r}
+reg_coeffs <- country_ind_2017 |> 
+  summarise(beta_1 = sum(covar_xy)/sum(var_x),
+            beta_0 = mean(child_mort) - beta_1*mean(tfr))
+reg_coeffs
+```
+
+## Extracting coefficients to be separate variables
+
+In the code above, the regression coefficients are saved in the same tibble. To make them their own variables:
+
+```{r}
+beta_0 <- reg_coeffs$beta_0
+beta_1 <- reg_coeffs$beta_1
+```
+
+The dollar sign $ allows you to easily extract a column from a dataframe / tibble. 
+
+## Question
+
+Interpret the regression coefficients. 
+
+# Estimating SLR using `lm`
+
+We don't have to calculate the regression coefficients 'by hand', we can just use the `lm` function. ('lm' stands for 'linear models').
+
+The main arguments are
+
+- The formula, which is written in the form `y~x` 
+- The data frame that contains the variables 
+
+Fit our SLR:
+
+```{r}
+childmort_tfr_model <- lm(formula = child_mort~tfr, data = country_ind_2017)
+```
+
+Print out the summary:
+
+```{r}
+summary(childmort_tfr_model)
+```
+
+Confirm that the resulting values are the same as the ones you obtained by doing the calculations 'by hand'.
+
+## Extract results
+
+To extract coefficients from the model output, use the `coef()` function
+
+```{r}
+coef(childmort_tfr_model)
+```
+
+Can assign these to variables by indexing the relevant number:
+
+```{r}
+beta_0 <- coef(childmort_tfr_model)[1] # the [1] means get the first item
+beta_1 <- coef(childmort_tfr_model)[2] 
+```
+
+
+
+
+## Question
+
+What is the estimated child mortality for a country with a TFR or 5?
+
+
+
+# Plotting the fitted line on a scatter plot
+
+To visualize our fitted line we can add to our plot from before using `geom_abline`
+
+```{r}
+ggplot(country_ind_2017, aes(tfr, child_mort)) + 
+  geom_point() + 
+  geom_abline(intercept = beta_0, slope = beta_1, color = "red")
+```
+
+

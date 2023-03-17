@@ -1,0 +1,860 @@
+---
+title: "SOC6302 Statistics for Sociologists"
+author: "Monica Alexander"
+date: "Week 8: Simple Linear Regression"
+output: 
+  beamer_presentation:
+    slide_level: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, eval = TRUE, size = '\tiny')
+```
+
+## Announcements
+
+- Assignment 3 out (1 question)
+- Details for research project proposal and EDA also out
+
+
+## Where are we at
+
+- We are interested in making inferences about a population
+- **Toolkit 1**: Probability
+    + when answering questions using the data we have available, there is chance/randomness involved
+    + e.g. data from a sample
+    + e.g. deciding whether a particular observation comes from a population
+    + we can use probability to quantify uncertainty
+- **Toolkit 2**: descriptive statistics and data visualizations
+    + before running a model, we can get a long way by looking at key summary stats and charts
+    + e.g. means by group tells us something about differences / similarities
+    + e.g. key charts to visualize distributions and relationships
+
+
+## Where are we going
+
+- We are interested in explaining patterns in an outcome of interest (dependent variable) $Y$ in relation to one or more explanatory variables $X_1, X_2, \dots$
+- i.e. how does $Y$ vary with different levels of $X_1$?
+- We could explore this with graphs/ summary statistics!
+- But **regression models** allow us to quantify relationships, taking into account **uncertainty** based on the data that we observe
+
+
+## Running example
+
+
+- Back to the `country_indicators` dataset. 
+- Research question: In 2017, how does the expected value of life expectancy differ or change across countries with different levels of fertility?
+- In other words, is life expectancy associated with fertility, and if so, how?
+
+How could we explore this graphically? 
+
+
+## Histogram of life expectancy
+
+
+
+```{r}
+library(tidyverse)
+library(here)
+country_ind <- read_csv(here("data/country_indicators.csv"))
+country_ind %>% 
+    filter(year==2017) %>% 
+  ggplot(aes(life_expectancy)) + geom_histogram(fill = "steelblue4", color = "firebrick4")
+```
+
+## Histogram of fertility
+
+```{r}
+country_ind %>% 
+    filter(year==2017) %>% 
+  ggplot(aes(tfr)) + geom_histogram(fill = "steelblue4", color = "firebrick4")
+```
+
+## Summarief s by TFR level
+
+```{r}
+country_ind %>% 
+    filter(year==2017) %>% 
+  mutate(tfr_level = case_when(tfr<2 ~ "Low TFR",
+                               tfr>2&tfr<4 ~ "Mid TFR",
+                               tfr>4 & tfr < 6 ~ "High TFR",
+                               tfr > 6 ~ "Very high TFR")) |> 
+  group_by(tfr_level) |> 
+  summarize(mean_life_expectancy = round(mean(life_expectancy), 2)) |> 
+  mutate(tfr_level = factor(tfr_level, levels = c("Low TFR",
+                                                  "Mid TFR",
+                                                  "High TFR",
+                                                  "Very high TFR"),
+                            labels = c("Low TFR",
+                                                  "Mid TFR",
+                                                  "High TFR",
+                                                  "Very high TFR"))) |> 
+  arrange(-mean_life_expectancy) |> 
+  kableExtra::kable()
+```
+
+
+## Scatterplot of life expectancy versus TFR
+
+```{r}
+country_ind %>% 
+  filter(year==2017) %>% 
+  ggplot(aes(y = life_expectancy, x = tfr)) + geom_point() +
+  xlim(c(0, 7.5)) + ylim(c(50, 90))
+```
+
+
+
+
+
+
+## The story so far
+
+Our question: 
+
+- In 2017, how does the expected value of life expectancy differ or change across countries with different levels of fertility?
+
+We can already kind of answer this based on summary statistics and graphs of our data. So what's missing?
+
+- Ideally, want to account for uncertainty in the data we observe and make some statements about how sure (or otherwise) we are that the outcome of interest (life expectancy) differs by covariate of interest (fertility)
+- Linear regression is a model that allows us to do this
+
+
+#  Conditioning
+
+## Conditioning on covariates
+
+- We are considering our outcome of interest (life expectancy) by different values of our covariate 
+- That is, we are **conditioning** on values of fertility and considering different characteristics of our outcome
+- This is trying to study at the **conditional distribution** of life expectancies
+
+
+## Conditional distributions more generally
+
+```{r, echo = FALSE}
+library(tidyverse)
+ggplot() +
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    aes(fill = "not Dutch "),
+    color = "black",
+    alpha = .3,
+    args = list(
+                  mean = 167,
+                  sd = 8
+                ))+
+  stat_function(
+    fun = dnorm,
+    geom = "area",
+    aes(fill = "Dutch"),
+    color = "black",
+    alpha = .2,
+    args = list(
+                  mean = 180,
+                  sd = 4
+                ))+
+  scale_x_continuous(limits = c(140, 210), breaks = seq(140, 200, by = 15))+
+  scale_fill_brewer(name="", palette = "Set1")+
+  ggtitle("Distribution of heights based on whether or not nationality is Dutch")
+```
+
+## Conditional expectations
+
+- As well as looking at conditional distributions, we can look at other measures conditioning on covariates of interest
+- Of particular interest is the **conditional expectation**, which is the (weighted) average of all possible values of the outcome of interest $Y$, given a particular value of covariate of interest $X$. 
+- This is essentially a group mean; a measure of central tendency of a conditional distribution. 
+
+## Expectations: notation
+
+Expected values (not conditioned!) are written 
+$$
+E(Y)
+$$
+
+## Expected values: calculations
+$$
+E(Y)=\sum_{y} y p(y)
+$$
+
+- I toss an unbiased coin 3 times. What's the expected number of heads?
+
+## Expected values: calculations
+
+## Conditional expectations
+
+Conditional expected values are written
+$$
+E(Y \mid X=x)
+$$
+
+or for more than one $X$
+$$
+E(Y \mid X_1=x_1, X_2 = x_2, \dots)
+$$
+
+## Conditional expectation: calculation
+
+$$
+E(Y \mid X=x)=\sum_{y} y p_{Y \mid X}(y \mid x)
+$$
+
+- I toss a coin 3 times, and my technique is such that H/T are equally likely
+- My toddler tosses a coin 3 time, and his technique is such that it always comes up heads
+
+What is $E(Y|X = \text{Monica})$? What is $E(Y|X = \text{toddler})$?
+
+## Conditional expectations with outcomes more interesting than coins
+
+- In our example, one measure that we are interested in is life expectancy, conditioning on fertility levels
+- $E(\text{life expectancy }\mid \text{fertility}) = E(Y_i|X_i = x_i)$ is a good summary measure that allows us to quantify differences across subgroups of interest
+- In our example we don't know (for sure) the underlying probabilities of all possible outcomes (which are infinite!), but can still estimate $E(Y \mid X_1=x_1, X_2 = x_2, \dots)$ from the data
+
+How does $E(Y_i|X_i = x_i)$ relate to the data we observe, $Y_i$?
+
+
+## The conditional expectation decomposition property
+
+Any outcome $Y_i$ can be decomposed into the following
+
+$$
+Y_{i}=E\left(Y_{i} \mid \mathbf{X_{i}}\right)+\varepsilon_{i}
+$$
+
+One way to interpret the this is that $Y_i$ can
+be decomposed into two independent components: a component
+“explained by $X_i$ ” and a component “unexplained by $X_i$”
+
+
+
+# The simple linear regression model
+
+## Back to our example
+
+- Research question: In 2017, how does the expected value of life expectancy differ or change across countries with different levels of fertility?
+- In other words, is life expectancy associated with fertility, and if so, how?
+
+
+## SLR set-up and notation
+
+- $Y_i$ is the response variable, and $X_i$ is the explanatory variable
+
+Questions:
+
+- In our example, what is Y and what is X?
+- In our example, what does $i$ refer to?
+- In a example using GSS, what would $i$ refer to?
+
+
+
+## The simple linear regression model
+
+
+$$
+Y_i = \beta_0 + \beta_1X_i + \varepsilon_i
+$$
+
+SLR models $Y_i$ as a simple linear function of $X_i$ with two parameters, $\beta_0$ and $\beta_1$
+
+- $\beta_0$ and $\beta_1$ are **regression coefficients**
+- $\beta_0$ is called the **intercept**
+- $\beta_1$ is called the **slope**
+
+## The simple linear regression model
+
+
+$$
+Y_i = \beta_0 + \beta_1X_i + \varepsilon_i
+$$
+
+- $\beta_0$ is the is the expected value, or population mean, of $Y_i$ given $X_i$ is equal to zero. 
+- $\beta_1$ is the change in the expected value, or population mean, of $Y_i$ associated with a one unit increase in $X_{i}$
+
+
+
+## Side note: remember this?
+
+The conditional expectation decomposition property
+
+$$
+Y_{i}=E\left(Y_{i} \mid X_{i}\right)+\varepsilon_{i}
+$$
+
+So the SLR is a model for the conditional expectation
+
+$$
+\begin{aligned}
+Y_{i} &=E\left(Y_{i} \mid X_{i}\right)+\varepsilon_{i} \\
+&=\beta_{0}+\beta_{1} X_{i}+\varepsilon_{i}
+\end{aligned}
+$$
+
+- We are interested in estimating $E\left(Y_{i} \mid X_{i}\right)$ from the data
+- One reasonable model to do this is SLR
+- Hence why the interpretation of $\beta_0$ etc is the expected value or population mean.
+
+## Estimated SLR model for life expectancy / TFR
+
+
+```{r, include = FALSE}
+lm(life_expectancy ~ tfr, data = country_ind %>% filter(year==2017))
+```
+
+$$
+Y_i = 89.2 -5.35X_i + \varepsilon_i
+$$
+
+- $\hat{\beta_0} = 89.2$
+- $\hat{\beta_1} = -5.35$
+
+Notice that the regression coefficients get little hats!
+
+Notation:
+
+- $\beta_0$, $\beta_1$ are estimands (parameters of interest)
+- $\hat{\beta_0}$, $\hat{\beta_1}$ are estimators (functions/methods of getting a value of the parameters)
+- $\hat{\beta_0} = 89.2$ and $\hat{\beta_1} = -5.35$ are estimates (values calculated from observed data)
+
+## Interpretation of the SLR model
+
+```{r}
+country_ind %>% 
+  filter(year==2017) %>% 
+  ggplot(aes(y = life_expectancy, x = tfr)) + geom_point() + 
+  geom_smooth(method = "lm", se = FALSE, lwd = 1.2)+
+  xlim(c(0, 7.5)) + ylim(c(50, 90))
+```
+
+## Why is it called regression?
+
+- The term regression was first used by Francis Galton in the 19th century
+- Comes from the concept of "regression to the mean"
+- If a sample point of a random variable is extreme, a future point will tend to be closer to the mean
+- Galton observed that extreme characteristics (e.g., height) in parents are not passed on completely to their offspring. Rather, the characteristics in the offspring regress towards the mean.
+
+
+<!-- ## Fancy averages -->
+
+<!-- - Conditional expectations are just fancy averages -->
+<!-- - Linear regression is a model to estimate conditional expectations -->
+<!-- - So regression is just estimating fancy averages -->
+
+<!-- \vspace{10mm} -->
+
+<!-- \centering -->
+<!-- \includegraphics[width = 0.7\textwidth]{../fig/tweet.png} -->
+
+
+
+
+
+# Estimation and the method of least squares
+
+## Estimating the regression coefficients
+
+$$
+Y_i = \beta_0 + \beta_1X_i
+$$
+
+- In order to estimate our regression coefficients, we want to find the **line of best fit**
+- Which line, of all possible lines, results in the least amount of difference between the observed data points and the line
+- Looking at the **residuals** (vertical distances) between what the model predicted and each data point
+
+
+## Draw on the residuals
+
+```{r}
+set.seed(15)
+country_ind %>% 
+  filter(year==2017) %>% 
+  mutate(id = 1:n()) %>% 
+  filter(id %in% sample(x = 1:176, size = 30)) %>% 
+  ggplot(aes(y = life_expectancy, x = tfr)) + geom_point() + 
+  geom_smooth(method = "lm", se = FALSE, lwd = 1.2)
+```
+
+## Minimizing the residuals
+
+- Positive and negative residuals tend to cancel each other out, so we look at the squared residuals
+
+$$
+(Y_i - (\hat{\beta_0} + \hat{\beta_1}X_i))^2
+$$
+
+- We want to find the line results in the lowest sum of squared residuals 
+
+$$
+SSR = \sum_i(Y_i - (\hat{\beta_0} + \hat{\beta_1}X_i))^2 = \sum_i \hat{\varepsilon}_i^2
+$$
+
+- **The method of ordinary least squares (OLS)** finds the line that has the lowest sum of squared residuals 
+
+## Method of least squares estimators
+
+- The OLS estimators for the SLR model parameters are:
+
+$$
+\hat{\beta}_{1}=\frac{\sum_{i}\left(Y_{i}-\frac{1}{n} \sum_{i} Y_{i}\right)\left(X_{i}-\frac{1}{n} \sum_{i} X_{i}\right)}{\sum_{i}\left(X_{i}-\frac{1}{n} \sum_{i} X_{i}\right)^{2}}=\frac{\sum_{i}\left(Y_{i}-\bar{Y}_{i}\right)\left(X_{i}-\bar{X}_{i}\right)}{\sum_{i}\left(X_{i}-\bar{X}_{i}\right)^{2}}
+$$
+
+$$
+\hat{\beta}_{0}=\frac{1}{n} \sum_{i} Y_{i}-\widehat{\beta}_{1}\left(\frac{1}{n} \sum_{i} X_{i}\right)=\bar{Y}_{i}-\widehat{\beta}_{1} \bar{X}_{i}
+$$
+
+## OLS estimation of the SLR model
+
+Sample of 4 points only
+
+```{r, fig.align='center'}
+library(kableExtra)
+set.seed(17)
+country_ind %>% 
+  filter(year==2017) %>% 
+  mutate(id = 1:n()) %>% 
+  filter(id %in% sample(x = 1:176, size = 4)) %>% 
+  mutate(Country = 1:4) %>% 
+  mutate(tfr = round(tfr, 1), 
+         life_expectancy = round(life_expectancy, 1)) %>% 
+  rename(`X (TFR)` = tfr) %>% 
+  rename(`Y (life expectancy)` = life_expectancy) %>% 
+  select(Country, `X (TFR)`, `Y (life expectancy)`) %>% 
+  kable() %>% 
+  kable_styling(position = "c")
+```
+
+
+$$
+\hat{\beta}_{1}=\frac{\sum_{i}\left(Y_{i}-\bar{Y}_{i}\right)\left(X_{i}-\bar{X}_{i}\right)}{\sum_{i}\left(X_{i}-\bar{X}_{i}\right)^{2}}
+$$
+
+$$
+\hat{\beta}_{0}=\bar{Y}_{i}-\widehat{\beta}_{1} \bar{X}_{i}
+$$
+What components do we need to calculate?
+
+## OLS estimation of the SLR model
+
+\footnotesize
+```{r, fig.align='center'}
+set.seed(17)
+country_ind %>% 
+  filter(year==2017) %>% 
+  mutate(id = 1:n()) %>% 
+  filter(id %in% sample(x = 1:176, size = 4)) %>% 
+  mutate(Country = 1:4) %>% 
+  mutate(tfr = round(tfr, 1), 
+         life_expectancy = round(life_expectancy, 1)) %>% 
+  #summarise(mean(tfr), mean(life_expectancy))
+  rename(`X (TFR)` = tfr) %>% 
+  rename(`Y (life expectancy)` = life_expectancy) %>% 
+  select(Country, `X (TFR)`, `Y (life expectancy)`) %>% 
+  kable() %>% 
+  kable_styling(position = "c")
+```
+
+- $\bar{X}_i = ?$
+- $\bar{Y}_i = ?$
+
+$$
+\hat{\beta}_{1}=\frac{\sum_{i}\left(Y_{i}-\bar{Y}_{i}\right)\left(X_{i}-\bar{X}_{i}\right)}{\sum_{i}\left(X_{i}-\bar{X}_{i}\right)^{2}}
+$$
+
+$$
+\hat{\beta}_{0}=\bar{Y}_{i}-\widehat{\beta}_{1} \bar{X}_{i}
+$$
+
+
+
+## OLS estimation of the SLR model
+
+\tiny
+```{r, fig.align='center'}
+set.seed(17)
+country_ind %>% 
+  filter(year==2017) %>% 
+  mutate(id = 1:n()) %>% 
+  filter(id %in% sample(x = 1:176, size = 4)) %>% 
+  mutate(Country = 1:4) %>% 
+  mutate(tfr = round(tfr, 1), 
+         life_expectancy = round(life_expectancy, 1)) %>% 
+  mutate(`X - Xbar` = round(tfr - mean(tfr), 1)) %>% 
+  mutate(`Y - Ybar` = round(life_expectancy - mean(life_expectancy),1)) %>% 
+  mutate(`(X - Xbar)^2` = round(`X - Xbar`^2,1) ) %>% 
+   mutate(`(X - Xbar)(Y - Ybar)` = round(`X - Xbar`*`Y - Ybar`,1) ) %>% 
+  rename(X = tfr) %>% 
+  rename(Y = life_expectancy) %>% 
+  select(Country, X,Y, 
+         `X - Xbar`, 
+         `Y - Ybar`, 
+         `(X - Xbar)^2`,
+         `(X - Xbar)(Y - Ybar)`) %>% 
+  #summarise(sum(`(X - Xbar)^2`), sum(`(X - Xbar)(Y - Ybar)`))
+  kable() %>% 
+  kable_styling(position = "c")
+```
+
+\vspace{10mm}
+
+\footnotesize
+- $\sum_{i}\left(Y_{i}-\bar{Y}_{i}\right)\left(X_{i}-\bar{X}_{i}\right) =$?
+- $\sum_{i}\left(X_{i}-\bar{X}_{i}\right)^{2} =$?
+
+
+
+
+$$
+\hat{\beta}_{1}=\frac{\sum_{i}\left(Y_{i}-\bar{Y}_{i}\right)\left(X_{i}-\bar{X}_{i}\right)}{\sum_{i}\left(X_{i}-\bar{X}_{i}\right)^{2}}
+$$
+
+$$
+\hat{\beta}_{0}=\bar{Y}_{i}-\widehat{\beta}_{1} \bar{X}_{i}
+$$
+
+
+
+
+## OLS estimation of the SLR model
+
+\tiny
+```{r, fig.align='center'}
+set.seed(17)
+country_ind %>% 
+  filter(year==2017) %>% 
+  mutate(id = 1:n()) %>% 
+  filter(id %in% sample(x = 1:176, size = 4)) %>% 
+  mutate(Country = 1:4) %>% 
+  mutate(tfr = round(tfr, 1), 
+         life_expectancy = round(life_expectancy, 1)) %>% 
+  mutate(`X - Xbar` = round(tfr - mean(tfr), 1)) %>% 
+  mutate(`Y - Ybar` = round(life_expectancy - mean(life_expectancy),1)) %>% 
+  mutate(`(X - Xbar)^2` = round(`X - Xbar`^2,1) ) %>% 
+   mutate(`(X - Xbar)(Y - Ybar)` = round(`X - Xbar`*`Y - Ybar`,1) ) %>% 
+  rename(X = tfr) %>% 
+  rename(Y = life_expectancy) %>% 
+  select(Country, X,Y, 
+         `X - Xbar`, 
+         `Y - Ybar`, 
+         `(X - Xbar)^2`,
+         `(X - Xbar)(Y - Ybar)`) %>% 
+  kable() %>% 
+  kable_styling(position = "c")
+```
+
+\vspace{10mm}
+
+\footnotesize
+- $\hat{\beta}_{1} =$?
+- $\hat{\beta}_{0} =$?
+
+
+
+
+$$
+\hat{\beta}_{1}=\frac{\sum_{i}\left(Y_{i}-\bar{Y}_{i}\right)\left(X_{i}-\bar{X}_{i}\right)}{\sum_{i}\left(X_{i}-\bar{X}_{i}\right)^{2}}
+$$
+
+$$
+\hat{\beta}_{0}=\bar{Y}_{i}-\widehat{\beta}_{1} \bar{X}_{i}
+$$
+
+## Back to full country dataset
+
+
+```{r, fig.height = 5}
+country_ind %>% 
+  filter(year==2017) %>% 
+  ggplot(aes(y = life_expectancy, x = tfr)) + geom_point() + 
+  geom_smooth(method = "lm", se = FALSE, lwd = 1.2)+
+xlim(c(0, 7.5)) + ylim(c(50, 90))
+```
+
+$$
+Y_i = 89.2 -5.35X_i + \varepsilon_i
+$$
+
+- $\hat{\beta_0} = 89.2$
+- $\hat{\beta_1} = -5.35$
+
+## TFR and life expectancy
+
+
+```{r, fig.height = 4}
+country_ind %>% 
+  filter(year==2017) %>% 
+  ggplot(aes(y = life_expectancy, x = tfr)) + geom_point() + 
+  geom_smooth(method = "lm", se = FALSE, lwd = 1.2)+
+  xlim(c(0, 7.5)) + ylim(c(50, 90))
+```
+
+Focus on one data point: Niger ($i = 176$)
+
+$$
+\textcolor{purple}{Y_{i=176}} = \textcolor{red}{\hat{E}(Y_i|X_i = 7)}  + \textcolor{blue}{\hat{\varepsilon}_{i = 176}}
+$$
+$$
+\textcolor{purple}{Y_{i=176}} = \textcolor{red}{\hat{Y}_{i = 176}}  + \textcolor{blue}{\hat{\varepsilon}_{i = 176}}
+$$
+$$
+\textcolor{purple}{Y_{i=176}} = \textcolor{red}{89.2 + 7\times-5.35}  + \textcolor{blue}{11.05}
+$$
+$$
+\textcolor{purple}{observed} = \textcolor{red}{estimated}  + \textcolor{blue}{residual}
+$$
+
+
+## OLS estimation of the SLR model
+
+Back to using 4 sample points only
+
+\footnotesize
+```{r, fig.align='center'}
+set.seed(17)
+betas <- country_ind %>% 
+  filter(year==2017) %>% 
+  mutate(id = 1:n()) %>% 
+  filter(id %in% sample(x = 1:176, size = 4)) %>% 
+  mutate(Country = 1:4) %>% 
+  mutate(tfr = round(tfr, 1), 
+         life_expectancy = round(life_expectancy, 1)) %>% 
+  mutate(`X - Xbar` = round(tfr - mean(tfr), 1)) %>% 
+  mutate(`Y - Ybar` = round(life_expectancy - mean(life_expectancy),1)) %>% 
+  mutate(`(X - Xbar)^2` = round(`X - Xbar`^2,1) ) %>% 
+   mutate(`(X - Xbar)(Y - Ybar)` = round(`X - Xbar`*`Y - Ybar`,1) ) %>% 
+  rename(X = tfr) %>% 
+  rename(Y = life_expectancy) %>% 
+  select(Country, X,Y, 
+         `X - Xbar`, 
+         `Y - Ybar`, 
+         `(X - Xbar)^2`,
+         `(X - Xbar)(Y - Ybar)`) %>% 
+  summarise(beta_1 = round(sum(`(X - Xbar)(Y - Ybar)`)/sum(`(X - Xbar)^2`), 1),
+            beta_0 = round(mean(Y) - mean(X*beta_1),1))
+
+set.seed(17)
+country_ind %>% 
+  filter(year==2017) %>% 
+  mutate(id = 1:n()) %>% 
+  filter(id %in% sample(x = 1:176, size = 4)) %>% 
+  mutate(Country = 1:4) %>% 
+  mutate(tfr = round(tfr, 1), 
+         life_expectancy = round(life_expectancy, 1)) %>% 
+  rename(X = tfr) %>% 
+  rename(Y = life_expectancy) %>% 
+  mutate(Yhat = betas$beta_0[1] +X*betas$beta_1[1]) %>% 
+  select(Country, X, Y, Yhat) %>% 
+  kable() %>% 
+  kable_styling(position = "center")
+```
+
+
+$$
+\hat{E}\left(Y_{i} \mid X_{i}\right)=\widehat{Y}_{i}=\hat{\beta}_{0}+\hat{\beta}_{1} X_{i}=84 -3.7 X_{i}
+$$
+
+## OLS estimation of the SLR model
+
+\footnotesize
+```{r, fig.align='center'}
+set.seed(17)
+betas <- country_ind %>% 
+  filter(year==2017) %>% 
+  mutate(id = 1:n()) %>% 
+  filter(id %in% sample(x = 1:176, size = 4)) %>% 
+  mutate(Country = 1:4) %>% 
+  mutate(tfr = round(tfr, 1), 
+         life_expectancy = round(life_expectancy, 1)) %>% 
+  mutate(`X - Xbar` = round(tfr - mean(tfr), 1)) %>% 
+  mutate(`Y - Ybar` = round(life_expectancy - mean(life_expectancy),1)) %>% 
+  mutate(`(X - Xbar)^2` = round(`X - Xbar`^2,1) ) %>% 
+   mutate(`(X - Xbar)(Y - Ybar)` = round(`X - Xbar`*`Y - Ybar`,1) ) %>% 
+  rename(X = tfr) %>% 
+  rename(Y = life_expectancy) %>% 
+  select(Country, X,Y, 
+         `X - Xbar`, 
+         `Y - Ybar`, 
+         `(X - Xbar)^2`,
+         `(X - Xbar)(Y - Ybar)`) %>% 
+  summarise(beta_1 = round(sum(`(X - Xbar)(Y - Ybar)`)/sum(`(X - Xbar)^2`), 1),
+            beta_0 = round(mean(Y) - mean(X*beta_1),1))
+
+set.seed(17)
+country_ind %>% 
+  filter(year==2017) %>% 
+  mutate(id = 1:n()) %>% 
+  filter(id %in% sample(x = 1:176, size = 4)) %>% 
+  mutate(Country = 1:4) %>% 
+  mutate(tfr = round(tfr, 1), 
+         life_expectancy = round(life_expectancy, 1)) %>% 
+  rename(X = tfr) %>% 
+  rename(Y = life_expectancy) %>% 
+  mutate(Yhat = betas$beta_0[1] + X*betas$beta_1[1]) %>% 
+  mutate(ehat = Y - Yhat) %>% 
+  select(Country, X, Y, Yhat, ehat) %>% 
+  kable() %>% 
+  kable_styling(position = "center")
+```
+
+
+$$
+\hat{E}\left(Y_{i} \mid X_{i}\right)=\widehat{Y}_{i}=\hat{\beta}_{0}+\hat{\beta}_{1} X_{i}=84 -3.7 X_{i}
+$$
+$$
+\hat{\varepsilon}=Y_{i}-\widehat{E}\left(Y_{i} \mid X_{i}\right)=Y_{i}-\widehat{Y}_{i}=Y_{i}-\left(84 -3.7 X_{i}\right)
+$$
+
+
+
+
+## SLR in R
+
+\tiny   
+```{r, echo=TRUE}
+country_ind_2017 <- country_ind |> 
+  filter(year==2017)
+mod2 <- lm(life_expectancy~tfr, data = country_ind_2017)
+summary(mod2)
+```
+
+## Summary 
+
+- We are interested in the relationships between two variables
+- On average, if X changes, how much to we expect Y to change?
+- Simple linear regression gives us the tools to study relationships between two variables, accounting for uncertainty in data
+
+# How much variation does our model explain: $R^2$
+
+## Thinking about variation
+
+- So far we've been mostly concerned about conditional expectations, that is, population means for different subgroups/populations of different characteristics
+- Let's think about variation in $Y_i$ around measures of central tendency for a moment
+
+What sorts of variation may we be interested in?
+
+- Variation of data $Y_i$ around the observed mean $\bar{Y}_i$
+- Variation of fitted values $\hat{Y}_i$ around observed mean $\bar{Y}_i$
+- Variation of data $Y_i$ around fitted values $\hat{Y}_i$
+
+## Sums of squares
+
+- Variation of data $Y_i$ around the observed mean $\bar{Y}_i$
+    + Total sum of squares SST: $(Y_i - \bar{Y}_i)^2$
+- Variation of fitted values $\hat{Y}_i$ around observed mean $\bar{Y}_i$
+    + Model sum of squares SSM: $(\hat{Y}_i - \bar{Y}_i)^2$
+- Variation of data $Y_i$ around fitted values $\hat{Y}_i$
+    + Residual sum of squares SSR: $(Y_i - \hat{Y}_i)^2$
+    
+## Sums of squares
+
+- Variation of data $Y_i$ around the observed mean $\bar{Y}_i$
+    + Total sum of squares SST: $(Y_i - \bar{Y}_i)^2$
+    + Total variation in $Y_i$
+- Variation of fitted values $\hat{Y}_i$ around observed mean $\bar{Y}_i$
+    + Model sum of squares SSM: $(\hat{Y}_i - \bar{Y}_i)^2$
+    + Variation explained by our $X$'s
+- Variation of data $Y_i$ around fitted values $\hat{Y}_i$
+    + Residual sum of squares SSR: $(Y_i - \hat{Y}_i)^2$
+    + Variation not explained by $X$'s
+
+$$
+SST = SSM + SSR
+$$
+
+## $R^2$
+
+$$
+SST = SSM + SSR
+$$
+$$
+R^2 = \frac{SSM}{SST} = 1 - \frac{SSR}{SST}
+$$
+
+The proportion of total variation in $Y_i$ explained by covariates $X_i$. 
+
+# Simple Linear Regression with a categorical covariate
+
+## Running example
+
+Using GSS data 
+
+- Question: are people born outside of Canada more likely to start having children later compared to those born in Canada?
+
+
+Variables:
+
+- Age at first birth
+- Place of birth (Canada, outside Canada)
+
+
+How could we explore this graphically? Or with summary stats?
+
+```{r, echo = FALSE}
+library(tidyverse)
+library(kableExtra)
+gss <- read_csv("../../data/gss.csv")
+```
+
+## Looking at conditional distributions
+
+```{r}
+gss %>% 
+  drop_na(has_bachelor_or_higher, place_birth_canada) %>% 
+  filter(place_birth_canada!= "Don't know") %>% 
+  ggplot(aes(x = age_at_first_birth, fill = place_birth_canada)) + 
+  geom_histogram(position = "dodge", aes(y = ..density..))
+```
+
+## Estimated SLR model for age at first birth and place of birth
+In this case, the control for $X_i$ is born in Canada. 
+
+```{r, include = FALSE}
+mod <- lm(data = gss %>% filter(place_birth_canada!= "Don't know"), age_at_first_birth~place_birth_canada)
+summary(mod)
+```
+
+
+$$
+Y_i = 26.5 +1.82X_i + \varepsilon_i
+$$
+
+- $\hat{\beta_0} = 26.5$
+- $\hat{\beta_1} = 1.82$
+
+Interpretation of $\hat{\beta_1}$ is **compared to the baseline**. In this case, it is the difference in age of first birth of people born outside Canada compared to born in Canada.
+
+## SLR in R
+
+\footnotesize
+```{r, echo = TRUE}
+# filter out the don't knows
+gss <- gss %>% filter(place_birth_canada!="Don't know")
+# run the regression
+mod <- lm(age_at_first_birth ~ place_birth_canada, data = gss)
+```
+
+## SLR in R
+
+\tiny   
+```{r, echo=TRUE}
+summary(mod)
+```
+
+## More than one category
+
+Baseline is Atlantic region
+
+\tiny   
+
+```{r}
+summary((lm(data = gss, age_at_first_birth~ region)))
+```
+
+
+## Summary
+
+- In linear regression, the dependent variable has to be continuous
+- But the covariate/ indepedent variable does not have to be
+- If the covariate is categorial, the interpretation of the coefficient $\beta_1$ becomes a comparison
+- Can be a binary covariate (i.e. two categories) but extends to more categories as well 
+- In R, `lm` automatically drops one of the categories (by default, this is done alphabetically)
+
+
