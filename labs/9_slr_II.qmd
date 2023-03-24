@@ -1,0 +1,252 @@
+---
+title: "Week 9: Simple linear regression II"
+author: "SOC6302 Winter 2023"
+format: 
+  pdf:
+    number-sections: true
+execute:
+  message: false
+  warning: false
+---
+
+In this lab we are going to:
+
+- Extract $R^2$ from lm object
+- How to extract fitted values and residuals from `lm` object
+- Calculate $R^2$ ourselves
+- Plot residuals versus TFR values
+- Calculate correlation between residuals and TFR
+- Do log transforms and regressions with those
+
+# Load in the data
+
+We are again going to look at the country indicators dataset.
+
+```{r}
+library(tidyverse)
+library(here)
+country_ind <- read_csv(here("data/country_indicators.csv"))
+
+```
+
+
+## Filter to just be 2017
+
+```{r}
+country_ind_2017 <- country_ind |> filter(year==2017)
+```
+
+## Look at the observed relationship between TFR and child mortality
+
+```{r}
+ggplot(country_ind_2017, aes(tfr, child_mort)) + 
+  geom_point()+
+    labs(title = "Child mortality versus TFR, 2017", 
+       x = "total fertility rate (births per woman)",
+       y = "child mortality rate (deaths per 1000 births)")
+```
+
+# Fit a simple linear regression
+
+As before, let's fit a regression model with chlid mortality as the dependent variable and TFR as the independent variable. 
+
+```{r}
+childmort_tfr_model <- lm(formula = child_mort~tfr, data = country_ind_2017)
+summary(childmort_tfr_model)
+```
+
+## Extract $R^2$
+
+We can extract $R^2$ from the model object. First, let's look to see what's in the model summary object:
+
+```{r}
+names(summary(childmort_tfr_model))
+```
+
+We can extract the R-squared value using the "list" notation ([[]])
+
+```{r}
+summary(childmort_tfr_model)[["r.squared"]]
+```
+
+### Question
+
+Interpret the value of $R^2$ above.
+
+
+# Extract fitted values and residuals and calculate $R^2$ 'by hand'
+
+Remember the formula for $R^2$ is 
+
+$$
+R^2 = \frac{SSM}{SST}
+$$
+
+That is, the ratio of the model sum of squares to total sum of squares. To calculate this, we need to 
+
+- Calculate $\bar{Y}$ (i.e. the mean of child mortality)
+- Extract fitted values $\hat{Y}$
+- Hence calculate SSM
+- Get observed $Y_i$'s
+- Hence calculate SST and $R^2$
+
+## Calculate $\bar{Y}$
+
+First thing we need to do is to calculate $\bar{Y}$ (mean of outcome, child mortality)
+
+```{r}
+Ybar <- country_ind_2017 |> 
+  summarise(mean(child_mort)) |> 
+  pull() # pull the number out of the dataframe
+Ybar
+
+# note you could have alternatively done
+# mean(country_ind_2017$child_mort)
+```
+
+## Extract fitted values
+
+Remember SSM is defined as 
+
+$$
+SSM = \sum(\hat{Y_i} - \bar{Y_i})^2
+$$
+
+We need fitted values. We can get these from our model object, using the 'list' notation as before:
+
+```{r}
+names(childmort_tfr_model)
+Yhat <- childmort_tfr_model[["fitted.values"]]
+```
+
+## Calculate SSM
+
+From the formula above:
+
+```{r}
+SSM <-  sum((Yhat - Ybar)^2)
+SSM
+```
+
+## Get observed $Y_i$
+
+In order to calculate the SST, we need a vector of observed $Y_i$'s:
+
+```{r}
+Yi <- country_ind_2017 |> 
+  select(child_mort) |> 
+  pull()
+Yi
+```
+
+## Calculate SST
+
+Now using the formula for SST:
+
+$$
+SSM = \sum({Y_i} - \bar{Y_i})^2
+$$
+We can calculate SST:
+
+```{r}
+SST <- sum((Yi - Ybar)^2)
+SST
+```
+
+## Calculate $R^2$
+
+$R^2$ is just the ratio of these two quantities:
+
+```{r}
+SSM/SST
+```
+
+
+# Plot residuals versus TFR (X)
+
+Let's explore patterns in residuals versus different levels of TFR. 
+
+## Extract residuals 
+
+First, we need to extract out the residuals:
+
+```{r}
+resid <- childmort_tfr_model[["residuals"]]
+```
+
+### Question
+
+Note that we could have calculated the residuals as $Y_i - \hat{Y_i}$, using the `Yi` and `Yhat` vectors above. Confirm that calculating the residuals this way gives the same values as what we extracted from the model.  
+
+## Add residuals to data frame
+
+In order to make plotting easier, let's add the residuals as a new column:
+
+```{r}
+country_ind_2017_resid <- country_ind_2017 |> 
+  mutate(residual = resid)
+
+country_ind_2017_resid
+```
+
+## Make a plot
+
+Now we can make a scatter plot of the residuals versus TFR:
+
+
+```{r}
+ggplot(data = country_ind_2017_resid, aes(x = tfr, y = residual)) +
+  geom_point()+
+  labs(title = "Residuals versus TFR")
+```
+
+We see evidence of heteroskedasticity: it looks like the variance in our residuals increases with increased values of TFR.
+
+
+
+
+# Take log transforms and repeating the regression analysis
+
+## Create log transformed variables
+
+First, we are going to ake two variables, which are the log transforms of child mortality and fertility:
+
+```{r}
+country_ind_2017 <- country_ind_2017 |> 
+  mutate(log_child_mort = log(child_mort),
+         log_tfr = log(tfr))
+```
+
+## Explore visually
+
+Let's do a scatterplot of the transformed variables. What do you notice?
+
+```{r}
+ggplot(data = country_ind_2017, aes(x = log_tfr, y = log_child_mort)) + 
+  geom_point() + 
+  labs(title = "Child mortality (logged) versus TFR (logged)",
+       x = "TFR (logged)",
+       y = "child mortality (logged)")
+```
+
+## Repeat regression analysis
+
+Now let's run a regression using the logged version of the variables:
+
+```{r}
+childmort_tfr_model_log <- lm(log_child_mort~log_tfr, data = country_ind_2017)
+summary(childmort_tfr_model_log)
+```
+
+### Question
+
+Interpret the coefficient on `log_tfr`
+
+## Repeat residual analysis
+
+### Question
+
+Repeat the process of extracting/calculating residuals, and plotting these against the X covariate (which is now log_tfr). What do you notice?
+
+
+

@@ -1,0 +1,904 @@
+---
+title: "SOC6302 Statistics for Sociologists"
+author: "Monica Alexander"
+date: "Week 9: Simple Linear Regression II"
+output: 
+  beamer_presentation:
+    slide_level: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, size = '\tiny')
+```
+
+```{r}
+library(tidyverse)
+library(here)
+gss <- read_csv(here("data/gss.csv"))
+country_ind <- read_csv(here("data/country_indicators.csv"))
+country_ind_2017 <- country_ind %>% filter(year==2017)
+```
+
+## Announcements
+
+- A3 and RQ and EDA due next week
+- A3 optional
+- RQ: primary and second questions, ideally
+    + e.g. Question: are people born outside of Canada more likely to start having children later compared to those born in Canada?
+    + Does the answer to this question persist after we take into account education?
+- Note that your dependent variable must be a continuous variable
+- But explanatory variables can be anything
+
+## Overview
+
+- Hypothesis testing of coefficients
+- Log transforms 
+- Start multiple linear regression
+
+## Review of SLR set-up
+
+- $Y_i$ is the response variable, and $X_i$ is the explanatory variable
+
+Example:
+
+- Research question: In 2017, how does the expected value of life expectancy differ or change across countries with different levels of fertility?
+- In other words, is life expectancy associated with fertility, and if so, how?
+
+## Scatter plot
+
+```{r}
+country_ind_2017 %>% 
+  ggplot(aes(tfr, life_expectancy)) + 
+  geom_point()+
+  labs(y = "life expectancy (years)", x = "TFR (births per woman)")
+```
+
+
+
+## Fit SLR in R
+
+\tiny
+```{r, echo = TRUE}
+country_ind_2017 <- country_ind %>% filter(year==2017)
+slr_mod <- lm(life_expectancy~tfr, data = country_ind_2017)
+summary(slr_mod)
+```
+
+```{r, include = FALSE}
+ehat <- resid(slr_mod)
+Yhat <- fitted(slr_mod)
+head(ehat)
+head(Yhat)
+```
+
+    
+## Sums of squares
+
+- Variation of data $Y_i$ around the observed mean $\bar{Y}_i$
+    + Total sum of squares SST: $(Y_i - \bar{Y}_i)^2$
+    + Total variation in $Y_i$
+- Variation of fitted values $\hat{Y}_i$ around observed mean $\bar{Y}_i$
+    + Model sum of squares SSM: $(\hat{Y}_i - \bar{Y}_i)^2$
+    + Variation explained by our $X$'s
+- Variation of data $Y_i$ around fitted values $\hat{Y}_i$
+    + Residual sum of squares SSR: $(Y_i - \hat{Y}_i)^2$
+    + Variation not explained by $X$'s
+
+$$
+SST = SSM + SSR
+$$
+
+## $R^2$
+
+$$
+SST = SSM + SSR
+$$
+$$
+R^2 = \frac{SSM}{SST} = 1 - \frac{SSR}{SST}
+$$
+
+The proportion of total variation in $Y_i$ explained by covariates $X_i$. 
+
+# Hypothesis testing
+
+## Fit SLR in R
+
+\tiny
+```{r, echo = TRUE}
+country_ind_2017 <- country_ind %>% filter(year==2017)
+slr_mod <- lm(life_expectancy~tfr, data = country_ind_2017)
+summary(slr_mod)
+```
+
+## SLR fit
+
+- The estimate of $\hat{\beta_1}$ tells us there's a negative association between TFR and life expectancy as estimated from the data
+- But how sure of this are we? It's not a perfect relationship, and there is some noise
+- It was reasonably clear from our scatterplot, but what if our scatter plot had looked different?
+
+## Intuition of hypothesis testing
+
+- We are assuming there's some underlying $\beta_1$ that we're trying to find (this assumes the truth is a linear relationship)
+- We get an estimate of $\beta_1$ (called $\hat{\beta_1}$) based on data we collect
+- But this estimate could be right, almost right, or completely wrong compared to the truth
+- In regression we are usually interested in deciding whether we believe $\beta_1$ is non-zero (i.e. there is a linear association between our two variables)
+- The degree to which we believe this depends on what the data look like
+
+## Intuition of hypothesis testing
+
+- If the data look a lot like a linear relationship, then we conclude that there's enough evidence to suggest a non-zero relationship and that our estimate is probably right
+- The more randomness there is in the data, the less likely we are to believe our estimate is the truth
+- Hypothesis testing (based on t-tests) is a way of accounting for this uncertainty and making inferences about the relationships between variables
+
+## Intuition of hypothesis testing
+
+How do we account for the uncertainty in the data before making decisions about whether $\beta_1$ is zero or not?
+
+- The regression model has a bunch (five) of assumptions underlying it
+- If we assume these are true, then it turns out we know what the probability distribution of possible values of $\hat{\beta_1}$ look like
+- If a lot of probability density in this distribution is near zero (read: if zero is likely), then we would conclude there's not enough evidence to suggest a linear relationship
+- And vice versa
+
+## To dos
+
+To do:
+
+- Learn assumptions
+- Write down distribution for $\hat{\beta_1}$
+- Do hypothesis testing
+- Celebrate, eat cake, graduate
+
+
+## Assumption 1
+
+**1. no model mis-specification**
+
+- This assumption means that the dependent variable must be a simple linear function of the explanatory variable. 
+
+## Assumption 1
+
+**1. no model mis-specification**
+
+Example violation ($y$ is a function of $x^3$)
+
+```{r, fig.height = 5}
+x <- seq(0, 20, by = 0.1)
+y <- rnorm(n = length(x), mean = -2+0.1*x^3, sd = 50)
+
+samps <- sample(1:length(x), 50)
+
+tibble(x = x[samps], y = y[samps]) %>% 
+  ggplot(aes(x,y)) + geom_point() + 
+  geom_smooth(method = "lm")
+
+```
+
+
+## Assumption 2
+
+**2. $X_i$ is not a constant**
+
+If there is no variation in $X_i$, then there is not a unique solution to $\hat{\beta}_1$
+
+Example violation:
+
+```{r, fig.height = 5}
+tibble(y = rnorm(30), x = 1) %>% 
+  ggplot(aes(x,y)) + geom_point()
+```
+
+
+
+## Assumption 3
+
+**3. $\{X_i, Y_i\}$ are from a simple random sample**
+
+This assumption implies that all members of a population have an equal probability of selection, that all possible samples of size $n$ have an equal probability of selection, and that each observation is independent of all the others
+
+## Assumption 3
+
+**3. $\{X_i, Y_i\}$ are from a simple random sample**
+
+Example of violation: sample in which $\{X_i, Y_i\}$ are only observed if $Y_i>20$ 
+
+```{r, fig.height = 5}
+x <- seq(0, 20, by = 0.1)
+y <- -2+3*x-3*(x-10)*as.numeric(x>10)+rnorm(length(x), sd = 2)
+
+tibble(x = x[samps], y = y[samps]) %>%  
+  mutate(y_pos = ifelse(y>20, y, NA)) %>% 
+  pivot_longer(y:y_pos, names_to = "sample") %>% 
+  ggplot(aes(x,value, color = sample)) + geom_point() +
+  geom_smooth(method = "lm", se = FALSE) + 
+  theme(legend.position = "none")
+  
+```
+
+
+## Assumption 4
+
+**4. The variance of $\varepsilon_i$ is the same across all values of $X_i$** 
+
+That is,
+$$
+\operatorname{Var}\left(\varepsilon_{i} \mid X_{i}\right)=\sigma^{2}
+$$
+
+- If, for example, the variance of $\varepsilon_i$ is larger for higher values of $X_i$, then this assumption is violated
+- When the error variance is constant across $X_i$, it is called “homoscedastic”
+- When the error variance is non-constant across $X_i$, it is called “heteroscedastic”
+
+## Assumption 4
+
+**4. The variance of $\varepsilon_i$ is the same across all values of $X_i$** 
+
+Example violation (heteroskedasticity): 
+
+```{r}
+x <- seq(0, 20, by = 0.1)
+y <- rnorm(length(x), sd = x)
+tibble(x = x, residuals = y) %>% 
+  ggplot(aes(x, residuals)) + geom_point()
+```
+
+
+## Assumption 5
+
+**5. The normality assumption: $\varepsilon_i$ is normally distributed**
+
+- If, for example, the distribution of $\varepsilon_i$ is skewed or has “heavy” tails, then this assumption is violated
+
+```{r, fig.height=5}
+x <- seq(0, 20, by = 0.1)
+y <- -2+3*x+rnorm(length(x), sd = 4)
+
+tibble(x = x[samps], y = y[samps]) %>% 
+  ggplot(aes(x, y)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+## Assumptions
+
+The first four assumptions are the **Gauss-Markov assumptions**
+
+1. GM1: No model mis-specification (linearity in covariates)
+2. GM2: $X_i$ is not constant
+3. GM3: Simple random sampling
+4. GM4: Constant variance of $\varepsilon_i$
+5. Normality assumption of $\varepsilon_i$
+
+Taken together, these assumptions imply that
+
+$$
+y|x\sim N\left(\beta_{0}+\beta_{1}x, \sigma^{2}\right)
+$$
+
+<!-- ## Sampling distribution of the MLR-OLS estimator -->
+
+<!-- - Under the MLR model assumptions, the OLS estimator, $\hat{\beta}_k$ is normally distributed with a mean equal to -->
+<!-- $$ -->
+<!-- E\left(\hat{\beta}_{k}\right)=\beta_{k} -->
+<!-- $$ -->
+<!-- and variance  -->
+<!-- $$ -->
+<!-- \operatorname{Var}\left(\hat{\beta}_{k}\right)=\frac{\sigma^{2}}{\sum_{i}\left(X_{i k}-\bar{X}_{i k}\right)^{2}\left(1-R_{k}^{2}\right)} -->
+<!-- $$ -->
+
+<!-- We use information about the probability distribution of $\hat{\beta}_k$ to make inferences about ${\beta}_k$. -->
+
+<!-- ## Sampling distribution of the MLR-OLS estimator -->
+
+<!-- The standard deviation of $\hat{\beta}_{k}$ -->
+
+<!-- $$ -->
+<!-- sd\left(\hat{\beta}_{k}\right)=\sqrt{\frac{\sigma^{2}}{\sum_{i}\left(X_{i k}-\bar{X}_{i k}\right)^{2}\left(1-R_{k}^{2}\right)}} -->
+<!-- $$ -->
+
+<!-- Under ideal conditions, statistical inferences about MLR parameters would be based on the fact that the standardized MLR-OLS estimator follows the z-distribution (i.e., the standard normal distribution) -->
+
+<!-- $$ -->
+<!-- Z_{\widehat{\beta}_{k}}=\frac{\widehat{\beta}_{k}-\beta_{k}}{s d\left(\widehat{\beta}_{k}\right)} \sim N(0,1) -->
+<!-- $$ -->
+<!-- But we don't know know the true value for $\sigma^2$, so we have to estimate.  -->
+
+<!-- ## Standard error of the MLR-OLS estimator -->
+
+<!-- - Because $\sigma^2$ is an unknown population quantity, and thus $s d\left(\widehat{\beta}_{1}\right)$ is unknown, we have to estimate them -->
+<!-- - An estimator for the error variance $\sigma^2 = \operatorname{Var}\left(\varepsilon_{i} \mid X_{i}\right)$ is  -->
+
+<!-- $$ -->
+<!-- \hat{\sigma}^2 = \frac{\sum_i \hat{\varepsilon}_i^2}{n-(k+1)} = \frac{SSR}{df} -->
+<!-- $$ -->
+<!-- And the standard error of $\hat{\beta}_{k}$, which is an estimator of $s d\left(\widehat{\beta}_{1}\right)$, is  -->
+<!-- $$ -->
+<!-- \operatorname{se}\left(\hat{\beta}_{k}\right)=\sqrt{\frac{\widehat{\sigma}^{2}}{\sum_{i}\left(X_{i k}-\bar{X}_{i k}\right)^{2}\left(1-R_{k}^{2}\right)}} -->
+<!-- $$ -->
+
+<!-- ## Sampling distribution of the SE- standardized MLR-OLS estimator -->
+
+<!-- Under the five assumption discussed, the SE-standardized $\hat{\beta}_k$ -->
+
+<!-- $$ -->
+<!-- T_{\widehat{\beta}_{k}}=\frac{\widehat{\beta}_{k}-\beta_{k}}{s e\left(\widehat{\beta}_{k}\right)} -->
+<!-- $$ -->
+<!-- follows a t-distribution with $n-(k+1)$ degrees of freedom. -->
+
+## Assumptions taken as correct, standardizing
+
+- If we take the five assumptions above as given, it turns out that the distribution of possible values of our estimate $\hat{\beta_1}$ around the true value $\beta_1$ is knowm
+
+- In particular, we are going to look at a transformed version of $\hat{\beta_1}$:
+$$
+\frac{\widehat{\beta}_{1}-\beta_{1}}{s e\left(\widehat{\beta}_{1}\right)}
+$$
+where $s e\left(\widehat{\beta}_{1}\right)$ is the standard error of $\hat{\beta_1}$.
+
+- This should look familiar!
+
+## The t-statistic
+
+Let's give this quantity a name:
+$$
+T_{\widehat{\beta}_{1}} = \frac{\widehat{\beta}_{1}-\beta_{1}}{s e\left(\widehat{\beta}_{1}\right)}
+$$
+Given the five assumptions discussed, this follows a t-distribution with $n-(k+1)$ degrees of freedom, where $k$ is the number of covariates/explanatory variables in the model (for simple linear regression, $k = 1$).
+
+
+## What is the standard error?
+
+The standard error of $\hat{\beta}_{1}$, is
+$$
+\operatorname{se}\left(\hat{\beta}_{1}\right)=\sqrt{\frac{\widehat{\sigma}^{2}}{\sum_{i}\left(X_{i 1}-\bar{X}_{i 1}\right)^{2}\left(1-R_{1}^{2}\right)}}
+$$
+where 
+$$
+\hat{\sigma}^2 = \frac{\sum_i \hat{\varepsilon}_i^2}{n-(k+1)} = \frac{SSR}{df}
+$$
+and $R^2_1$ is the $R^2$ from a regression of $X_1$ against all other variables in the model
+
+## What is the standard error?
+
+Don't try and remember the formulas from the previous slide. Just remember that the standard error of $\hat{\beta}_{1}$ is proportional to the sum of squares of residuals. 
+
+- a larger error variance (i.e., greater unexplained variation in the outcome) is associated with a larger $\operatorname{se}\left(\hat{\beta}_{1}\right)$ and vice versa
+
+What does the standard error do to the distribution of $T_{\widehat{\beta}_{1}}$?
+
+
+## Hypothesis testing: more intuition
+
+- In regression, we are interested to see if there's evidence to suggest that $\beta_1$ is different enough from zero. 
+- Pretend for a moment that the true value of $\beta_1$ is zero. In this world (the null hypothesis world), our $T_{\widehat{\beta}_{1}}$ is just 
+$$
+\frac{\widehat{\beta}_{1}}{s e\left(\widehat{\beta}_{1}\right)}
+$$
+- In the null hypothesis world, this thing should be t-distributed (i.e. centered at zero with some variation around that)
+- So if we calculate this thing and it's really different from zero (i.e. where the distribution is centered), then it's unlikely it came from this distribution, and we can probably reject the world in which $\beta_1$ is zero
+- If this thing is not very different from zero, then we may not reject this world
+
+## Hypothesis testing: more intuition
+
+- We are dealing with randomness, and so there's always a chance that the value we see is from the null hypothesis world in which $\beta_1$ is zero
+- But the farther away it is from zero, the less likely that's true
+- The size of $T_{\widehat{\beta}_{1}}$ depends not only on the magnitude of $\widehat{\beta}_{1}$ but also the magnitude of the standard error of $\widehat{\beta}_{1}$
+- So the stronger the relationship (the bigger the $\widehat{\beta}_{1}$) the less likely we are going to believe the null hypothesis
+- But also for less noisy data (the smaller the standard error) the less likely we are going to believe the null hypothesis
+
+## Hypothesis testing: more formal language
+
+Say we run an SLR. 
+
+- The slope coefficient $\beta_1$ is an unknown population quantity, which we have estimated with data from a random sample of that population
+- We can test hypotheses about this unknown population quantity based on the fact that the $T_{\widehat{\beta}_{1}}$ follows a t-distribution with $n-2$ degrees of freedom
+- With knowledge of the probability distribution of $T_{\widehat{\beta}_{1}}$ we can make probabilistic statements about the chances of observing any particular value of $T_{\widehat{\beta}_{1}}$ given a hypothesized value for the unknown parameter
+- In particular, we are often interested in testing to see whether there is evidence to suggest that $\beta_1 \neq 0$ i.e. the slope coefficient is not zero i.e. there is evidence of a relationship between our dependent and independent variable
+
+
+## The t-test steps
+
+To test hypotheses about the value of $\beta_1$, we use a t-test (as the SE-standardized estimate follows a t-distribution). The steps of a t-test are:
+
+1. State your null and alternative hypotheses about $\beta_1$
+
+- The null hypothesis is denoted $H_0$
+- The alternative hypothesis is denoted $H_1$
+- e.g. $H_0: \beta_1 = b$ and $H_1: \beta_1 \neq b$
+
+2. Choose the level of type-I error, $\alpha$, which gives the probability of rejecting the null hypothesis when it is actually true
+
+- For example, $\alpha$ is most commonly chosen to be $0.05$ i.e. the type-I error rate is 5%
+
+## The t-test steps (ctd)
+
+3. Compute the t-test statistic
+
+$$
+t_{\widehat{\beta}_{1}}=\frac{\left(\widehat{\beta}_{1}-b\right)}{\operatorname{se}\left(\widehat{\beta}_{1}\right)}
+$$
+
+4. Compute the p-value, which gives the probability of observing a test statistic as or even more extreme than $t_{\widehat{\beta}_{1}}$ under the assumption
+that the null hypothesis is true
+
+5. Make a decision (reject the null if the p-value is less than $\alpha$, and fail to reject otherwise)
+
+<!-- ## Logic of the t-test -->
+
+<!-- - Under the 5 assumptions discussed earlier, if the null hypothesis that $\beta_1 = b$ were in fact true, then $T_{\widehat{\beta}_{1}}=\frac{\widehat{\beta}_{1}-b}{s e\left(\widehat{\beta}_{1}\right)}$ would be t-distributed with $n-2$ df.  -->
+<!-- - We can use this result to make probabilistic statements about the chances of observing different values of $T_{\widehat{\beta}_{1}}$ in any given sample -->
+<!-- - If the probability of observing a test statistic as or even more extreme than the value we actually observe in our sample is very small, then we conclude that the null hypothesis is not likely true -->
+
+## The t-test in R
+
+The `lm` summary put put shows the calculations for $t_{\widehat{\beta}_{1}}$ and corresponding p-value. Specifically these calculations test whether $H_0: \beta_1 = 0$ and $H_1: \beta_1 \neq 0$.
+
+\tiny
+```{r, echo = TRUE}
+slr_mod <- lm(life_expectancy~tfr, data = country_ind_2017)
+summary(slr_mod)
+```
+
+\normalsize
+What should we conclude?
+
+## Logic of the t-test
+
+
+```{r}
+ggplot() +
+  stat_function(
+    fun = dt,
+    geom = "area",
+    color = "black",
+    fill = NA,
+    args = list(
+                  df = 174
+                ))+
+  scale_x_continuous(limits = c(-5, 5)) + 
+  ylab("density")+
+  ggtitle("Distribution of t-statistic under H0")
+```
+
+
+## Logic of the t-test
+
+We calculated $t_{\widehat{\beta}_{1}} = -23$
+
+```{r}
+ggplot() +
+  stat_function(
+    fun = dt,
+    geom = "area",
+    color = "black",
+    fill = NA,
+    args = list(
+                  df = 174
+                ))+
+  scale_x_continuous(limits = c(-25, 5)) + 
+  geom_vline(xintercept = -23, color = "red")+
+  ylab("density")+
+  xlab("x")+
+  ggtitle("Distribution of t-statistic under H0")
+```
+
+## Logic of the t-test
+
+- We calculated $t_{\widehat{\beta}_{1}} = -23$
+- Under the null hypothesis, the probability of observing this value is very small—thus, we conclude the null hypothesis is likely false
+
+```{r, fig.height = 5}
+ggplot() +
+  stat_function(
+    fun = dt,
+    geom = "area",
+    color = "black",
+    fill = NA,
+    args = list(
+                  df = 174
+                ))+
+  scale_x_continuous(limits = c(-25, 5)) + 
+  geom_vline(xintercept = -23, color = "red")+
+  ylab("density")+
+  xlab("x")+
+  ggtitle("Distribution of t-statistic under H0")
+```
+
+# Regression with transformed variables
+
+## Motivation
+
+```{r, echo = FALSE}
+country_ind_2017 %>% 
+  ggplot(aes(gdp, tfr)) + geom_point() + theme_bw() + 
+  labs(y = "TFR", x = "GDP", title = "TFR versus GDP, 2017")
+```
+
+## Motivation
+
+```{r, echo = FALSE}
+country_ind_2017 %>% 
+  ggplot(aes(gdp, tfr)) + geom_point() + theme_bw() + 
+  #scale_y_log10() + 
+  scale_x_log10()+
+  labs(y = "TFR", x = "GDP", title = "TFR versus GDP, 2017", subtitle= "GDP plotted on log scale")
+```
+
+## Variable transformations
+
+- Sometimes we may want to allow for nonlinearities in our models
+- A common way to deal with this is to perform a nonlinear transformation on one or more of the explanatory variables **AND/OR** on the response variable
+- The interpretation of parameter estimates is less intuitive after transforming the explanatory variables and/or the response variable, although some transformations lend themselves to simple interpretations (i.e., the log transform)
+
+
+
+## Log transforms
+
+- By far the most common transformation is the natural log transform
+- Either $\log Y$ or $\log X$ (or both)
+- Luckily, the log transform has a meaningful coefficient interpretation
+
+We will look at 
+
+- $log Y_i = \beta_{0}+\beta_{1} X_{i}+\varepsilon_{i}$
+- $Y_i = \beta_{0}+\beta_{1} \log X_{i}+\varepsilon_{i}$
+- $log Y_i = \beta_{0}+\beta_{1} \log X_{i}+\varepsilon_{i}$
+
+
+## Log transforms: response variable
+
+For response variables, when the model is 
+$$
+\begin{aligned}
+\log Y_{i} 
+&=\beta_{0}+\beta_{1} X_{i}+\varepsilon_{i}
+\end{aligned}
+$$
+A one unit change in $X_{i}$ leads to a $\left(\exp(\beta_1)-1\right)100$ percent change in $Y_i$, on average, holding other factors constant.
+
+
+## Response variable: approximation
+
+It turns out that $\exp(z) \approx 1+ z$ for small values of $z$. 
+
+So an approximate interpretation is 
+$$
+100 \beta_{1}\left(\Delta X_{i }\right)=\% \Delta Y_{i}
+$$
+where $\Delta$ stands for "change".
+
+- Thus, a one unit increase in $X_i$ is associated with a $100 \cdot \beta_1$% change in $Y_i$, on average, holding other factors constant
+
+
+## Log transforms: expanatory variables
+
+For explanatory variables, when the model is 
+$$
+\begin{aligned}
+Y_{i} &=E\left(Y_{i} \mid \log X_{i}\right)+\varepsilon_{i} \\
+&=\beta_{0}+\beta_{1} \log X_{i}+\varepsilon_{i}
+\end{aligned}
+$$
+The interpretation is 
+$$
+\frac{\beta_{1}}{100}\left(\% \Delta X_{i}\right)=\Delta Y_{i}
+$$
+
+where $\Delta$ stands for "change".
+
+- Thus, a one percent (1%) increase in $X_k$ is associated with a $\frac{\beta_{1}}{100}$ unit change in $Y_i$, on average, holding other factors constant
+
+## Log transforms: both variables
+
+When both the response and explanatory variable is transformed, so the model is 
+$$
+\begin{aligned}
+\log Y_{i} &=E\left(Y_{i} \mid \log X_{i}\right)+\varepsilon_{i} \\
+&=\beta_{0}+\beta_{1} \log X_{i}+\varepsilon_{i}
+\end{aligned}
+$$
+
+We are going to utilize the first approximation here, and say
+
+The interpretation is 
+$$
+\beta_{1}\left(\% \Delta X_{i}\right)=\%\Delta Y_{i}
+$$
+
+- Thus, a one percent (1%) increase in $X_1$ is associated with a $\beta_1$ % change in $Y_i$, on average, holding other factors constant
+
+
+## Example
+
+\tiny
+```{r, echo = TRUE}
+country_ind <- country_ind %>% 
+  mutate(log_tfr = log(tfr)) # log of GDP
+
+summary(lm(log_tfr ~ gdp, data = country_ind))
+```
+
+- A 10^5 unit increase in GDP is associated with a 14% decrease in TFR
+
+
+## Example
+
+\tiny
+```{r, echo = TRUE}
+country_ind <- country_ind %>% 
+  mutate(log_gdp = log(gdp)) # log of GDP
+
+summary(lm(tfr ~ log_gdp, data = country_ind))
+```
+- A 1% increase in GDP is associated with a decrease of 0.93 children in TFR
+
+
+## Example
+
+\tiny
+```{r, echo = TRUE}
+summary(lm(log_tfr ~ log_gdp, data = country_ind))
+```
+- A 1% increase in GDP is associated with a 0.31% decrease in TFR
+
+
+## Summary
+
+- Often we may want to transform dependent or independent variables to make relationships more linear
+- Log transforms are by far the most common
+- This is because many variables are naturally log-normally distributed, e.g. income and GDP
+
+# Intro to multiple linear regression
+
+
+## Motivation
+
+- So far we have used regression to model the relationship between two variables 
+    + $Y_i$: dependent variable, response variable, outcome
+    + $X_i$: independent variable, covariate, explanatory variable, predictor
+- But for many problems, it's likely that the outcome of interest is associated with several different explanatory variables of interest
+    + Time taken to build lego tower depends on number of blocks and number of distractions
+    + Child's height depends on height of both parents
+    + Income depends on age, education, occupation...
+- We can extend the SLR set-up to include more that one independent variable/explanatory variable
+
+
+## Multiple Linear Regression
+
+How does the expected value (i.e. population mean) of a dependent variable differ across different levels of multiple independent variables?
+
+We will go through how to estimate this model (with two independent variables)
+
+- very similar to SLR process
+- extends to more than 2 variables
+
+
+## Example
+
+- $Y_i$ is the dependent variable or response variable
+- $X_{i1}$ and $X_{i2}$ are the independent variables, explanatory variables or predictors
+
+Example:
+
+- $\{Y_1, Y_2, \dots, Y_{176}\}$ is life expectancy by country in 2017
+- $\{X_{1,1}, X_{2,1}, \dots, X_{176,1}\}$ is TFR by country in 2017
+- $\{X_{1,2}, X_{2,2}, \dots, X_{176,2}\}$ is child mortality by country in 2017
+
+Research question:
+
+- How does life expectancy differ across different levels of fertility and child mortality
+- In other words, is life expectancy associated with fertility and child mortality, and if so, how?
+
+
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(scatterplot3d)
+library(here)
+country_ind <- read_csv(here("data/country_indicators.csv"))
+```
+
+## Scatter plot of fertility and life expectancy
+
+```{r}
+country_ind %>% 
+  filter(year==2017) %>% 
+  ggplot(aes(x = tfr, y = life_expectancy)) + 
+  geom_point()+
+  ylab("life expectancy") + xlab("fertility rate") + 
+  theme_bw(base_size = 14) + 
+  geom_smooth(method = "lm", se = F)
+```
+
+## Scatter plot of child mortality and life expectancy
+
+```{r}
+country_ind %>% 
+  filter(year==2017) %>% 
+  ggplot(aes(x = child_mort, y = life_expectancy)) + 
+  geom_point()+
+  ylab("life expectancy") + xlab("child mortality") + 
+  theme_bw(base_size = 14) + 
+  geom_smooth(method = "lm", se = F)
+```
+
+## Scatter plot of all variables
+```{r}
+country_ind_2017 <- country_ind %>% filter(year==2017)
+#plot_ly(x=country_ind_2017$child_mort, y=country_ind_2017$tfr, z=country_ind_2017$life_expectancy, type="scatter3d", mode="markers")
+scatterplot3d( 
+  x=country_ind_2017$child_mort, 
+  y=country_ind_2017$tfr,
+  z=country_ind_2017$life_expectancy, 
+  xlab = "child mortality", 
+  ylab = "fertility rate",
+  zlab = "life expectancy",highlight.3d = TRUE)
+```
+
+```{r, include = FALSE}
+
+#plot_ly(x=country_ind_2017$child_mort, y=country_ind_2017$tfr, z=country_ind_2017$life_expectancy, type="scatter3d", mode="markers")
+```
+
+
+
+## MLR model
+
+With two covariates, the MLR model is
+
+$$
+\begin{aligned}
+Y_{i} &=E\left(Y_{i} \mid X_{i 1}, X_{i 2}\right)+\varepsilon_{i} \\
+&=\beta_{0}+\beta_{1} X_{i 1}+\beta_{2} X_{i 2}+\varepsilon_{i}
+\end{aligned}
+$$
+
+Specifically, the most basic MLR model is a simple linear function of $X_{i 1}$ and $X_{i 2}$, and three parameters, $\beta_0$, $\beta_1$ and $\beta_2$.
+
+## Interpretation
+
+The MLR model: $E\left(Y_{i} \mid X_{i 1}, X_{i 2}\right) = \beta_{0}+\beta_{1} X_{i 1}+\beta_{2} X_{i 2}$
+
+- What is $\beta_0$?
+
+$$
+\begin{aligned}
+E\left(Y_{i} \mid X_{i 1}=0, X_{i 2}=0\right) &=\beta_{0}+\beta_{1}(0)+\beta_{2}(0) \\
+&=\beta_{0}
+\end{aligned}
+$$
+
+- $\beta_0$ is the is the expected value, or population mean, of $Y_i$ given both $X_{i 1}$ and $X_{i 2}$ equal zero. 
+
+## Interpretation
+
+The MLR model: $E\left(Y_{i} \mid X_{i 1}, X_{i 2}\right) = \beta_{0}+\beta_{1} X_{i 1}+\beta_{2} X_{i 2}$
+
+- What is $\beta_1$?
+
+$$
+\begin{aligned}
+E\left(Y_{i} \mid X_{i 1}\right.&\left.=x_{1}+1, X_{i 2}=x_{2}\right)-E\left(Y_{i} \mid X_{i 1}=x_{1}, X_{i 2}=x_{2}\right) \\
+&=\left(\beta_{0}+\beta_{1}\left(x_{1}+1\right)+\beta_{2} x_{2}\right)-\left(\beta_{0}+\beta_{1} x_{1}+\beta_{2} x_{2}\right) \\
+&=\left(\beta_{0}+\beta_{1} x_{1}+\beta_{1}+\beta_{2} x_{2}\right)-\left(\beta_{0}+\beta_{1} x_{1}+\beta_{2} x_{2}\right) \\
+&=\beta_{1}
+\end{aligned}
+$$
+
+- $\beta_1$ is the change in the expected value, or population mean, of $Y_i$ associated with a one unit increase in $X_{i 1}$, **holding $X_{i 2}$ constant at any value**
+
+Same idea for $\beta_2$.
+
+## Interpretation
+
+The MLR model: $E\left(Y_{i} \mid X_{i 1}, X_{i 2}\right) = \beta_{0}+\beta_{1} X_{i 1}+\beta_{2} X_{i 2}$
+
+- In general $\beta_{1}\left(x_{1}^{*}-x_{1}\right)$ is the change in the expected value of $Y_i$ associated with a $\left(x_{1}^{*}-x_{1}\right)$ change in $X_{i 1}$, holding $X_{i 2}$ constant
+- $\beta_{2}\left(x_{2}^{*}-x_{2}\right)$ is the change in the expected value of $Y_i$ associated with a $\left(x_{2}^{*}-x_{2}\right)$ change in $X_{i 2}$, holding $X_{i 1}$ constant
+
+## OLS Estimation
+
+Back to example 
+
+$$
+\begin{aligned}
+Y_{i} 
+&=\beta_{0}+\beta_{1} X_{i 1}+\beta_{2} X_{i 2}+\varepsilon_{i}
+\end{aligned}
+$$
+where $Y_i$ is life expectancy, $X_{i1}$ is fertility rate and $X_{i2}$ is child mortality. 
+
+The estimates are
+
+$$
+\begin{aligned}
+\hat{E}\left(Y_{i} \mid X_{i 1}, X_{i 2}\right) &= \widehat{\beta}_{0}+ \widehat{\beta}_{1}X_{i 1} + \widehat{\beta}_{2}X_{i 2}\\
+&= 83.8 - 1.07X_{i 1} - 0.21X_{i 2}
+\end{aligned}
+$$
+```{r, include=FALSE}
+summary(lm(life_expectancy~tfr+child_mort, data = country_ind_2017))
+```
+
+How should we interpret?
+
+
+## Interpretation
+
+The estimates are
+
+$$
+\begin{aligned}
+\hat{E}\left(Y_{i} \mid X_{i 1}, X_{i 2}\right) &= \widehat{\beta}_{0}+ \widehat{\beta}_{1}X_{i 1} + \widehat{\beta}_{2}X_{i 2}\\
+&= 83.8 - 1.07X_{i 1} - 0.21X_{i 2}
+\end{aligned}
+$$
+
+## OLS Estimation
+
+```{r}
+
+s3d <- scatterplot3d( 
+  x=country_ind_2017$child_mort, 
+  y=country_ind_2017$tfr,
+  z=country_ind_2017$life_expectancy,
+  xlab = "child mortality", 
+  ylab = "fertility rate",
+  zlab = "life expectancy",highlight.3d = TRUE)
+fit <- lm(life_expectancy ~ child_mort+tfr, data = country_ind_2017)
+s3d$plane3d(fit)
+
+```
+
+## OLS Interpretation
+For example, Japan:
+$$
+\begin{aligned}
+Y_i &= \hat{E}\left(Y_{i} \mid X_{i 1}=1.4, X_{i 2}=2.5\right) + \varepsilon_i\\
+&=83.8 - 1.07\times1.4 - 0.21\times2.5 + 5.5\\
+&=81.8+5.5
+\end{aligned}
+$$
+```{r, fig.height=6}
+s3d <- scatterplot3d( 
+  x=country_ind_2017$child_mort, 
+  y=country_ind_2017$tfr,
+  z=country_ind_2017$life_expectancy,
+  xlab = "child mortality", 
+  ylab = "fertility rate",
+  zlab = "life expectancy",highlight.3d = TRUE)
+fit <- lm(life_expectancy ~ child_mort+tfr, data = country_ind_2017)
+s3d$plane3d(fit)
+```
+
+
+```{r, include=FALSE}
+mod <- lm(life_expectancy~tfr+child_mort, data = country_ind_2017)
+fitted(mod)
+country_ind_2017 %>% mutate(fit = fitted(mod), eps = resid(mod)) %>% 
+  filter(country=="Japan")
+
+```
+
+
+
+## MLR in R
+
+- Can estimate MLR exactly the same way as SLR, just add additional variables with a `+` in the formula in `lm`
+- Residuals, fitted values etc extracted in the same way
+
+\tiny
+
+```{r, echo = TRUE}
+mod <- lm(life_expectancy~tfr+child_mort, data = country_ind_2017)
+summary(mod)
+```
+
+
+
+## Next week
+
+- Estimation
+- Categorical covariates
+- Hypothesis testing
+- Interaction
