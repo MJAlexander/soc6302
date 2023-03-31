@@ -1,0 +1,681 @@
+---
+title: "SOC6302 Statistics for Sociologists"
+author: "Monica Alexander"
+date: "Week 10: Multiple Linear Regression"
+output: 
+  beamer_presentation:
+    slide_level: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, eval = TRUE, size = '\tiny')
+```
+
+
+
+
+
+## Recap
+
+- $Y_i$ is the dependent variable or response variable
+- $X_{i1}$ and $X_{i2}$ are the independent variables, explanatory variables or predictors
+
+Example:
+
+- $\{Y_1, Y_2, \dots, Y_{176}\}$ is life expectancy by country in 2017
+- $\{X_{1,1}, X_{2,1}, \dots, X_{176,1}\}$ is TFR by country in 2017
+- $\{X_{1,2}, X_{2,2}, \dots, X_{176,2}\}$ is child mortality by country in 2017
+
+Research question:
+
+- How does life expectancy differ across different levels of fertility and child mortality
+- In other words, is life expectancy associated with fertility and child mortality, and if so, how?
+
+
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(scatterplot3d)
+library(here)
+country_ind <- read_csv(here("data/country_indicators.csv"))
+```
+
+## Scatter plot of fertility and life expectancy
+
+```{r}
+country_ind %>% 
+  filter(year==2017) %>% 
+  ggplot(aes(x = tfr, y = life_expectancy)) + 
+  geom_point()+
+  ylab("life expectancy") + xlab("fertility rate") + 
+  theme_bw(base_size = 14) + 
+  geom_smooth(method = "lm", se = F)
+```
+
+## Scatter plot of child mortality and life expectancy
+
+```{r}
+country_ind %>% 
+  filter(year==2017) %>% 
+  ggplot(aes(x = child_mort, y = life_expectancy)) + 
+  geom_point()+
+  ylab("life expectancy") + xlab("child mortality") + 
+  theme_bw(base_size = 14) + 
+  geom_smooth(method = "lm", se = F)
+```
+
+## Scatter plot of all variables
+```{r}
+country_ind_2017 <- country_ind %>% filter(year==2017)
+#plot_ly(x=country_ind_2017$child_mort, y=country_ind_2017$tfr, z=country_ind_2017$life_expectancy, type="scatter3d", mode="markers")
+scatterplot3d( 
+  x=country_ind_2017$child_mort, 
+  y=country_ind_2017$tfr,
+  z=country_ind_2017$life_expectancy, 
+  xlab = "child mortality", 
+  ylab = "fertility rate",
+  zlab = "life expectancy",highlight.3d = TRUE)
+```
+
+```{r, include = FALSE}
+
+#plot_ly(x=country_ind_2017$child_mort, y=country_ind_2017$tfr, z=country_ind_2017$life_expectancy, type="scatter3d", mode="markers")
+```
+
+
+
+## MLR model
+
+With two covariates, the MLR model is
+
+$$
+\begin{aligned}
+Y_{i} &=E\left(Y_{i} \mid X_{i 1}, X_{i 2}\right)+\varepsilon_{i} \\
+&=\beta_{0}+\beta_{1} X_{i 1}+\beta_{2} X_{i 2}+\varepsilon_{i}
+\end{aligned}
+$$
+
+Specifically, the most basic MLR model is a simple linear function of $X_{i 1}$ and $X_{i 2}$, and three parameters, $\beta_0$, $\beta_1$ and $\beta_2$.
+
+
+## MLR in R
+
+- Can estimate MLR exactly the same way as SLR, just add additional variables with a `+` in the formula in `lm`
+- Residuals, fitted values etc extracted in the same way
+
+\tiny
+
+```{r, echo = TRUE}
+mod <- lm(life_expectancy~tfr+child_mort, data = country_ind_2017)
+summary(mod)
+```
+
+
+## OLS Estimation
+
+- $E\left(Y_{i} \mid X_{i 1}, X_{i 2}\right)$, and by extension, $\beta_0, \beta_1$ and $\beta_2$ are unknown population quantities, so we need a way of estimating the MLR from sample data
+- Similar to the SLR case, we will use ordinary least squares (OLS) to choose estimators for $\{\beta_0, \beta_1, \beta_2\}$, denoted $\left\{\hat{\beta}_{0}, \hat{\beta}_{1}, \hat{\beta}_{2}\right\}$, that minimize the sum of squared residuals. This can be written as
+
+$$
+\begin{aligned}
+\sum_{i} \hat{\varepsilon}_{i}^{2} &=\Sigma_{i}\left(Y_{i}-\hat{E}\left(Y_{i} \mid X_{i 1}, X_{i 2}\right)\right)^{2} \\
+&=\sum_{i}\left(Y_{i}-\left(\widehat{\beta}_{0}+\widehat{\beta}_{1} X_{i 1}+\widehat{\beta}_{2} X_{i 2}\right)\right)^{2}
+\end{aligned}
+$$
+
+
+
+## OLS Estimation: minimizing square residuals
+
+```{r}
+scatterplot3d( 
+  x=country_ind_2017$child_mort, 
+  y=country_ind_2017$tfr,
+  z=country_ind_2017$life_expectancy, 
+  xlab = "child mortality", 
+  ylab = "fertility rate",
+  zlab = "life expectancy",highlight.3d = TRUE)
+```
+
+
+## OLS Estimation
+
+The OLS estimators for the MLR model parameters are:
+
+$$
+\hat{\beta}_{1} = \frac{\sum_{i}\left(\tilde{Y}_{i} \tilde{X}_{i 1}\right) \sum_{i}\left(\tilde{X}_{i 2} \tilde{X}_{i 2}\right) - \Sigma_{i}\left(\tilde{Y}_{i} \tilde{X}_{i 2}\right) \Sigma_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 2}\right)}{\sum_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 1}\right) \Sigma_{i}\left(\tilde{X}_{i 2} \tilde{X}_{i 2}\right) - \sum_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 2}\right) \Sigma_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 2}\right)}
+$$
+
+$$
+\hat{\beta}_{2} = \frac{\sum_{i}\left(\tilde{Y}_{i} \tilde{X}_{i 2}\right) \sum_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 1}\right) - \Sigma_{i}\left(\tilde{Y}_{i} \tilde{X}_{i 1}\right) \Sigma_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 2}\right)}{\sum_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 1}\right) \Sigma_{i}\left(\tilde{X}_{i 2} \tilde{X}_{i 2}\right) - \sum_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 2}\right) \Sigma_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 2}\right)}
+$$
+
+
+$$
+\hat{\beta}_{0}=\frac{1}{n} \sum_{i} Y_{i}-\hat{\beta}_{1}\left(\frac{1}{n} \sum_{i} X_{i 1}\right)-\hat{\beta}_{2}\left(\frac{1}{n} \sum_{i} X_{i 2}\right)=\bar{Y}_{i}-\hat{\beta}_{1} \bar{X}_{i 1}-\hat{\beta}_{2} \bar{X}_{i 2}
+$$
+
+where $\tilde{Y}_{i}=Y_{i}-\bar{Y}_{i}$, $\tilde{X}_{i 1}=X_{i 1}-\bar{X}_{i 1},$ and $\tilde{X}_{i 2}=X_{i 2}-\bar{X}_{i 2}$.
+
+## OLS Estimation
+
+$$
+\hat{\beta}_{1} = \frac{\sum_{i}\left(\tilde{Y}_{i} \tilde{X}_{i 1}\right) \sum_{i}\left(\tilde{X}_{i 2} \tilde{X}_{i 2}\right) - \Sigma_{i}\left(\tilde{Y}_{i} \tilde{X}_{i 2}\right) \Sigma_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 2}\right)}{\sum_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 1}\right) \Sigma_{i}\left(\tilde{X}_{i 2} \tilde{X}_{i 2}\right) - \sum_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 2}\right) \Sigma_{i}\left(\tilde{X}_{i 1} \tilde{X}_{i 2}\right)}
+$$
+
+Covariation between $Y_i$ and $X_{i1}$ that is independent of $X_{i2}$ divided by variation in $X_{i1}$ that is independent of $X_{i2}$.
+
+(Similarly for $\hat{\beta_2}$, but it is the covariation between $Y_i$ and $X_{i2}$ that is independent of $X_{i1}$ divided by variation in $X_{i2}$ that is independent of $X_{i1}$.)
+
+## OLS Estimation
+
+The 'partial effect' estimators can also be expressed as:
+
+$$
+\hat{\beta}_{1}=\frac{\sum_{i}\left(Y_{i}-\frac{1}{n} \Sigma_{i} Y_{i}\right)\left(X_{i 1}^{r}-\frac{1}{n} \Sigma_{i} X_{i 1}^{r}\right)}{\Sigma_{i}\left(X_{i 1}^{r}-\frac{1}{n} \Sigma_{i} X_{i 1}^{r}\right)^{2}}
+$$
+
+where $X_{i 1}^{r}=X_{i 1}-\hat{E}\left(X_{i 1} \mid X_{i 2}\right)$ are the residuals from an SLR of $X_{i1}$ on $X_{i2}$.
+
+In a similar way, $\hat{\beta_2}$ can be expressed in terms of the residuals from an SLR of $X_{i2}$ on $X_{i1}$.
+
+
+## Residuals 
+
+```{r}
+country_ind_2017 %>% 
+   mutate(fit = fitted(mod), eps = resid(mod)) %>% 
+  ggplot(aes(tfr, eps)) + 
+  geom_point()+geom_smooth(method = "lm") + 
+  ylab("residuals") + xlab("fertility rate")+ ggtitle("Residuals versus fertility rate")
+```
+
+## Residuals 
+
+```{r}
+country_ind_2017 %>% 
+   mutate(fit = fitted(mod), eps = resid(mod)) %>% 
+  ggplot(aes(child_mort, eps)) + 
+  geom_point()+geom_smooth(method = "lm") + 
+  ylab("residuals") + xlab("child mortality")+ ggtitle("Residuals versus child mortality")
+```
+
+## Residuals
+
+The residuals $\hat{\varepsilon}_i$ have two important properties
+
+1. The sum to zero
+2. The are uncorrelated with $X_{i1}$ and $X_{i2}$
+
+\footnotesize
+```{r, echo=TRUE}
+mod <- lm(life_expectancy~tfr+child_mort, data = country_ind_2017)
+sum(resid(mod))
+```
+
+## Variance decomposition
+
+Recall that the variance of $Y_i$ can be decomposed into two components: a component 'explained
+by $X_{i 1}$ and $X_{i 2}$' and a component 'unexplained by $X_{i 1}$ and $X_{i 2}$'.
+
+\footnotesize
+$$
+\begin{aligned}
+\text{total sum of squares} &= \text{model sum of squares} + \text{reisdual sum of squares} \\
+SST &= SSM + SSR \\
+\sum_{i}\left(Y_{i}-\bar{Y}_{i}\right)^{2} &=\sum_{i}\left(\widehat{Y}_{i}-\bar{Y}_{i}\right)^{2}+\quad \sum_{i}\left(Y_{i}-\widehat{Y}_{i}\right)^{2}
+\end{aligned}
+$$
+
+## Variance decomposition
+
+Recall from SLR that we can use this to assess model fit, through the $R^2$:
+
+$$
+R^{2}=\frac{S S M}{S S T}=1-\frac{S S R}{S S T}
+$$
+
+
+
+## Adjusted $R^2$
+
+- The addition of more explanatory variables with MLR will **always** increase
+the value of $R^2$
+- Because of this, researchers occasionally use a goodness of fit measure called the 'adjusted $R^2$' which includes a small 'penalty' for the number of explanatory variables in the model
+
+$$
+R_{a d j}^{2}=1-\frac{S S R / n-k-1}{S S T / n-1}
+$$
+where $k$ is the number of explanatory variables. 
+
+##
+\tiny
+
+```{r, echo = TRUE}
+mod <- lm(life_expectancy~tfr+child_mort, data = country_ind_2017)
+summary(mod)
+```
+
+
+## Outlook for the rest of the content
+
+- More than two variables
+- Assumptions
+- More on categorical variables
+- Polynomial regression
+- Interactions
+
+
+
+## Interpretation of MLR with $k = 3$
+
+```{r}
+library(tidyverse)
+country_ind <- read_csv("../../data/country_indicators.csv")
+```
+
+
+\tiny
+```{r, echo = TRUE}
+summary(lm(life_expectancy~tfr+child_mort+maternal_mort, data = country_ind))
+```
+
+
+## Interpretation
+
+
+
+## The MLR assumptions
+
+The five SLR assumptions we discussed are also important in the MLR context. 
+
+1. no model misspecification
+2. there is independent variation in all of the explanatory variables
+    + In other words, none of the explanatory variables are constants, and there are no perfect linear relationships among the explanatory variables
+    + e.g. can't have $X_{i1} = X_{i2}+X_{i3}$
+3. All variables are from a simple random sample
+    + This assumption implies that all members of a population have an equal probability of selection, that all possible samples of size $n$ have an equal probability of selection, and that each observation is independent of all the others
+    
+## The MLR assumptions
+
+4. The variance of $\varepsilon_{i}=Y_{i}-E\left(Y_{i} \mid X_{i 1}, X_{i 2}, \ldots, X_{i k}\right)$ is the same across all values of the explanatory variables i.e. $\operatorname{Var}\left(\varepsilon_{i} \mid X_{i 1}, X_{i 2}, \ldots, X_{i k}\right)=\sigma^{2}$
+    + This is called homoskedasticity
+5. The normality assumption $\varepsilon_{i}=Y_{i}-E\left(Y_{i} \mid X_{i 1}, X_{i 2}, \ldots, X_{i k}\right)$ is normally distributed
+
+
+## Implications for inference
+
+Under the five assumption discussed, the SE-standardized $\hat{\beta}_k$
+
+$$
+T_{\widehat{\beta}_{k}}=\frac{\widehat{\beta}_{k}-\beta_{k}}{s e\left(\widehat{\beta}_{k}\right)}
+$$
+follows a t-distribution with $n-(k+1)$ degrees of freedom.
+
+- Hypothesis testing is thus similar to SLR, through the use of t-tests. 
+- In regression, we are interested in testing the null hypothesis that $\beta_k = 0$.
+
+## Example R output
+
+\tiny
+```{r, echo = TRUE}
+summary(lm(life_expectancy~tfr+child_mort+maternal_mort, data = country_ind))
+```
+
+## Interpretation
+
+
+# More on categorical variables: changing the reference category
+
+## More than one category
+
+- Let's model the association of life expectancy and TFR, and region of the world
+- Region is a category
+- In R, we can directly put a categorical variable into MLR and it gets converted to a series of indicator variables
+
+## More than one category
+
+\tiny
+```{r, echo=TRUE}
+summary(lm(life_expectancy~tfr+region, data = country_ind))
+```
+
+## Interpretation
+
+The above model is 
+
+\footnotesize
+$$
+\begin{aligned}
+E\left(Y_{i} \mid X_{i 1},X_{i 2}\right)&=\beta_{0}+ \beta_1X_{i1}+\beta_{2} I\left(X_{i 2}=\text{``Developed Regions''}\right) \\
+&+ \beta_{3} I\left(X_{i 2}=\text{``Eastern Asia''}\right)\\
+&+\beta_{4} I\left(X_{i 2}=\text{``Latin America and Caribbean''}\right)\\
+&+ \dots \\
+&+ \beta_{10} I\left(X_{i 2}=\text{``Western Asia''}\right)
+\end{aligned}
+$$
+
+\normalsize
+<!-- where $X_{i1}$ is TFR and $X_{i2}$ is the `region` category. The notation $I\left(X_{i 2}=\text{``Developed Regions''}\right)$ means "equal to one if $X_{i 2}=$Developed Regions". -->
+
+Now the reference category is the Caucasus and Central Asia region. 
+
+- The intercept is the expected value of $Y_i$ when TFR is zero AND at the reference level of $X_{i 2}$ 
+- Each of the $\beta_2$ to $\beta_{10}$ gives the difference in the expected value of $Y_i$ between the reference level of $X_{i 2}$ and when $X_{i 2}$ equals that particular category. 
+
+## Interpretation
+\footnotesize
+$$
+\begin{aligned}
+E\left(Y_{i} \mid X_{i 1},X_{i 2}\right)&=\beta_{0}+ \beta_1X_{i1}+\beta_{2} I\left(X_{i 2}=\text{``Developed Regions''}\right) \\
+&+ \beta_{3} I\left(X_{i 2}=\text{``Eastern Asia''}\right)\\
+&+\beta_{4} I\left(X_{i 2}=\text{``Latin America and Caribbean''}\right)\\
+&+ \dots \\
+&+ \beta_{10} I\left(X_{i 2}=\text{``Western Asia''}\right)
+\end{aligned}
+$$
+
+\normalsize
+- $\hat{\beta_2} = 4.65$ holding TFR constant, the expected life expectancy in Developed Regions is 3 years higher than Caucasus and Central Asia
+- What is $\hat{\beta_4}$? 
+- How do we get the expected value of life expectancy at TFR = 0 for Southern Asia?
+
+## Changing the reference category
+
+- Note that in the last example the reference category was chosen by R by default (first alphabetically)
+- We can change this, by doing the following:
+    + Converting region to a factor
+    + Changing the reference level of the factor
+- Factors in R are characters that have a specified order
+
+
+## Changing the reference category
+
+\tiny
+```{r, echo=TRUE}
+country_ind <- country_ind %>% 
+   # change the original variable to a factor
+  mutate(region = factor(region)) %>%
+  # relevel the region factor make dev regions the reference
+  mutate(region_2 = fct_relevel(region, "Developed regions", after = 0)) 
+
+unique(country_ind$region)
+unique(country_ind$region_2)
+
+```
+
+## Changing the reference category
+
+\tiny
+
+```{r, echo = TRUE}
+summary(lm(life_expectancy~tfr+region_2, data = country_ind))
+```
+
+## Changing the reference category
+
+- Compare the results in the previous slide to the results where we just used region
+- The coefficients have changes because the reference category has changed
+- The significance has also changed because the reference category has a larger sample size (more countries in Developed Regions)
+
+# Extensions I: polynomial regression
+
+
+
+## Motivation
+
+- One of the most common types of model misspecification involves nonlinearity
+- We've already talked about one solution - logs!
+- A regression model can also accommodate certain types of nonlinearity pretty well through the use of polynomial terms
+- A polynomial regression function of degree $m$ can be expressed as:
+\footnotesize
+$$E\left(Y_{i} \mid X_{i 1}, \ldots, X_{i k}\right)=\beta_{0}+\beta_{1} X_{i 1}+\cdots+\beta_{k} X_{i k}+\beta_{k+1} X_{i k}^{2}+\cdots+\beta_{k+m} X_{i k}^{m}$$
+\normalsize
+- Adding polynomial terms to a MLR model allows the CEF to change nonlinearly with an explanatory variable
+
+
+## Polynomial regression with $m = 2$
+
+- Consider the following MLR model with a linear and quadratic term for $X_{i3}$
+$$
+E\left(Y_{i} \mid X_{i 1}, X_{i 2}, X_{i 3}\right)=\beta_{0}+\beta_{1} X_{i 1}+\beta_{2} X_{i 2}+\beta_{3} X_{i 3}+\beta_{4} X_{i 3}^{2}
+$$
+- The partial effect of $X_{i3}$ in this model is
+$$
+\beta_{3}+2 \beta_{4} X_{i 3}
+$$
+which indicates that the change in the conditional expectation associated with a unit increase in $X_{i3}$ depends on the reference value of $X_{i3}$
+
+
+```{r, include = FALSE}
+library(tidyverse)
+library(here)
+gss <- read_csv(here("data/gss.csv"))
+country_ind <- read_csv(here("data/country_indicators.csv"))
+
+gss <- gss %>% 
+  mutate(age_sq = age^2)
+
+# gss %>% 
+#   ggplot(aes(age, distance_between_houses)) + geom_point() + geom_smooth(method = "lm", formula = y~poly(x,2))
+
+summary(lm(age_at_first_marriage ~ age, data = gss %>% filter(age<75) ))
+summary(lm(age_at_first_marriage ~ age+age_sq, data = gss %>% filter(age<75)))
+
+
+
+```
+
+## Different shapes
+
+```{r}
+x <- seq(-10, 10, by = 0.1)
+dat <- data.frame(x,y=x^3+x^2+x+5)
+f <- function(x) 10 + x + 0.5*x^2
+f2 <- function(x) 10 + x - 0.5*x^2
+f3 <- function(x) 10 - x + 0.5*x^2
+f4 <- function(x) 10 - x - 0.5*x^2
+ggplot(dat, aes(x,y)) + 
+    #geom_point()+
+    stat_function(fun=f, aes(colour="both positive"))+
+    stat_function(fun=f2, aes(colour="positive x, negative x^2"))+
+    stat_function(fun=f3, aes(colour="negative x, positive x^2"))+
+    stat_function(fun=f4, aes(colour="both negative"))+
+  ggtitle("Different polynomial shapes")
+```
+
+## Example
+
+Income versus age in the American Community Survey
+
+```{r}
+acs <- read_csv(here("data/acs_inc.csv"))
+```
+
+\tiny
+```{r, echo = TRUE}
+summary(lm(incwage~age, data = acs))
+```
+## Example: income versus age 
+
+\tiny
+```{r, echo = TRUE}
+acs <- acs %>% 
+  mutate(age_sq = age^2)
+summary(lm(incwage~age+ age_sq, data = acs))
+```
+
+## Example: income versus age 
+
+$$
+Y_i = -96803 + 6921X - 70X^2
+$$
+
+- How should we interpret the partial effect of age?
+- When age = 25, effect = 3396.217
+- When age = 30, effect = 2691.217
+- When age = 70, effect = -2948.783
+
+## Example: income versus age 
+
+-  This figure shows a plot of income against age that additionally displays the quadratic fitted line
+-  The quadratic fit indicates that mean incomes increase faster at younger ages, slower during middle age, and eventually decline among the oldest workers, holding other factors constant
+
+```{r, fig.height=5}
+acs %>% 
+  select(incwage, age) %>% 
+  ggplot(aes(age, incwage)) + 
+  geom_point() + geom_smooth(method = "lm", formula = y ~ poly(x,2)) + 
+  ylab("Income from wages") + xlab("Age") + ggtitle("Income versus age with quadratic fit")
+```
+
+
+## Polynomial regression: summary
+
+- Incorporating polynomial terms into a regression model is a flexible way to approximate nonlinear relationships
+- The interpretation of parameter estimates is more difficult, but estimation and inferential procedures we covered previously can all be implemented exactly as before
+
+
+# Extensions II: Interaction terms
+
+## Motivation
+
+Example from last week, using GSS data 
+
+- Question: are people born outside of Canada more likely to start having children later compared to those born in Canada?
+- Does the answer to this question persist after we take into account education?
+
+Variables:
+
+- Age at first birth
+- Place of birth (Canada, outside Canada)
+- Bachelor or higher (yes/no)
+
+
+
+
+
+
+
+
+## Looking at distributions
+
+```{r}
+gss %>%
+  drop_na(has_bachelor_or_higher, place_birth_canada) %>%
+  filter(place_birth_canada!= "Don't know") %>%
+  ggplot(aes(x = age_at_first_birth, fill = place_birth_canada)) +
+  geom_histogram(position = "dodge", aes(y = ..density..))+
+  facet_grid(~has_bachelor_or_higher)
+```
+
+
+
+## Effect moderation
+
+-  Effect moderation refers to the situation where the partial effect of one explanatory variable differs or changes across levels of another explanatory variable
+    + e.g. the association between income and age may vary by education level
+- All of the models we have considered thus far constrain the partial effects of the explanatory variables to be invariant, but this may not be appropriate
+
+
+We can accommodate effect moderation through the use of **interaction terms**
+
+## Interaction terms
+
+Example of an MLR model with an interaction term:
+
+$$
+\begin{aligned}
+Y_{i} &=E\left(Y_{i} \mid X_{i 1}, X_{i 2}\right)+\varepsilon_{i} \\
+&=\beta_{0}+\beta_{1} X_{i 1}+\beta_{2} X_{i 2}+\beta_{3} X_{i 1} X_{i 2}
+\end{aligned}
+$$
+
+- How should we interpret the parameters in an MLR model with interaction terms?
+- First, let's take a look at how $E\left(Y_{i} \mid X_{i 1}, X_{i 2}\right)$ changes with a unit increase in $X_{i1}$
+
+## Interaction terms
+$$
+E\left(Y_{i} \mid X_{i 1}, X_{i 2}\right)=\beta_{0}+\beta_{1} X_{i 1}+\beta_{2} X_{i 2}+\beta_{3} X_{i 1} X_{i 2}
+$$
+In this model, the change in the expected value of $Y_i$ associated with a unit increase in $X_{i1}$ is given by
+$$
+E\left(Y_{i} \mid X_{i 1}=x_{1}+1, X_{i 2}=x_{2}\right)-E\left(Y_{i} \mid X_{i 1}=x_{1}, X_{i 2}=x_{2}\right)=\beta_{1}+\beta_{3} x_{2}
+$$
+
+- The partial effect of $X_{i1}$ now depends on the value to which we set the other explanatory variable, $X_{i2}$
+- Note that when $X_{i2}=0$, this expression simplifies to $\beta_1$, or in other words, $\beta_1$ is the change in the expected value of $Y_i$ associated with a unit increase in $X_{i1}$ specifically when $X_{i2}=0$
+
+
+## Interaction terms
+$$
+E\left(Y_{i} \mid X_{i 1}, X_{i 2}\right)=\beta_{0}+\beta_{1} X_{i 1}+\beta_{2} X_{i 2}+\beta_{3} X_{i 1} X_{i 2}
+$$
+Now let's look at the other variable, $X_{i2}$. In this model, the change in the expected value of $Y_i$ associated with a unit increase in $X_{i2}$ is given by
+$$
+E\left(Y_{i} \mid X_{i 1}=x_{1}, X_{i 2}=x_{2}+1\right)-E\left(Y_{i} \mid X_{i 1}=x_{1}, X_{i 2}=x_{2}\right)=\beta_{2}+\beta_{3} x_{2}
+$$
+
+- The partial effect of $X_{i2}$ now depends on the value to which we set the other explanatory variable, $X_{i1}$
+- Note that when $X_{i1}=0$, this expression simplifies to $\beta_2$, or in other words, $\beta_2$ is the change in the expected value of $Y_i$ associated with a unit increase in $X_{i2}$ specifically when $X_{i1}=0$
+
+
+## Interaction terms
+
+- The previous two slides may take a little getting used to 
+- In reality, one of our explanatory variables (say $X_{i2}$) is a binary variable (so either 0 or 1)
+- This simplifies the interpretation of the interaction term 
+
+## Example
+
+- What is the association between TFR, life expectancy and region?
+- Does the association between TFR and life expectancy differ based on whether country is in Developed Regions or not?
+
+## Example in R
+
+\tiny
+```{r, echo = TRUE}
+country_ind_2017 <- country_ind %>% 
+  filter(year==2017) %>% 
+  mutate(dev_region = ifelse(region=="Developed regions", "yes", "no"))
+
+summary(lm(tfr ~ life_expectancy + dev_region + life_expectancy*dev_region, data = country_ind_2017))
+```
+## Example
+
+$$
+Y_i = 13.5 - 0.14X_1 - 13.0 X_2 + 0.16X_1X_2
+$$
+
+Some interpretations
+
+- for non-developed regions, 1 year increase in life expectancy associated with 0.14 decrease in TFR
+- for developed regions, a 1 year increase in life expectancy associated with a 0.02 increase in TFR
+
+
+## Visualizing interactions 
+
+```{r}
+ggplot(aes(life_expectancy, tfr, color = dev_region), data = country_ind_2017) + 
+  geom_point() + geom_smooth(method = "lm") + 
+  ggtitle("TFR versus life expectancy, by region") + 
+  ylab("TFR") + xlab("Life expectancy") + 
+  scale_color_brewer(name = "Developed region", palette = "Set1")
+```
+
+## GSS example
+
+\tiny
+```{r}
+summary(lm(data = gss |> filter(place_birth_canada!= "Don't know"), age_at_first_birth~place_birth_canada+has_bachelor_or_higher+place_birth_canada*has_bachelor_or_higher))
+```
+
+
+## GSS example: interpretation
+
+
+## Summary
+-  The linear regression model is more flexible than it may appear at first
+- There are a variety of extensions and adaptions to conventional regression models that can mitigate the problems associated with misspecifcation
+- All models are wrong, but some models are less wrong than others, and some are useful

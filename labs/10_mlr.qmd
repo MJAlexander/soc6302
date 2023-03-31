@@ -1,0 +1,129 @@
+---
+title: "Week 11: Multiple linear regression"
+author: "SOC6302 Winter 2023"
+format: 
+  pdf:
+    number-sections: true
+execute:
+  message: false
+  warning: false
+---
+
+# Overview
+
+We are going to study age at first birth, and look at the association of this and age of first marriage and income in the GSS. For exercises to do for practice, you will also need the country indicators dataset. 
+
+# Data
+
+```{r}
+library(tidyverse)
+library(here)
+gss <- read_csv(here("data/gss.csv"))
+country_ind <- read_csv(here("data/country_indicators.csv"))
+```
+
+Select only the variables we are interested in
+```{r}
+gss <- gss |> 
+  select(age_at_first_birth, age_at_first_marriage, income_respondent)
+```
+Create a indicator variable = 1 if income is greater than $100,000
+
+```{r}
+gss <- gss |> 
+  mutate(high_income = ifelse(income_respondent=="$100,000 to $ 124,999"|income_respondent=="$125,000 and more", 1, 0))
+```
+
+# MLR with indicator variable
+
+Do a MLR model of age at first birth as a function of age at first marriage and high income
+
+```{r}
+mlr_mod <- lm(age_at_first_birth ~ age_at_first_marriage + high_income, data = gss)
+summary(mlr_mod)
+```
+## Questions
+
+- Interpret the coefficient estimate and p-value on `age_at_first_marriage`. 
+- Interpret the coefficient estimate and p-value on `high_income`. 
+
+# MLR with categorical variable
+
+Now let's do a model with the full income categories
+
+```{r}
+mlr_mod_2 <- lm(age_at_first_birth ~ age_at_first_marriage + income_respondent, data = gss)
+summary(mlr_mod_2)
+```
+## Questions
+
+- What is the reference category? It may help to look at the unique values of income:
+
+```{r}
+unique(gss$income_respondent)
+```
+
+- Interpret the coefficient value and p-value on the "\$75,000 to \$99,999" level of income
+
+# MLR with re-leveled income
+
+It's fair to say that the reference income category above probably doesn't make sense. Let's create a income factor with the levels that represent the natural order of the income categories. 
+
+```{r}
+gss <- gss |> 
+  mutate(income_respondent = factor(income_respondent, levels = c("Less than $25,000",
+                                                                  "$25,000 to $49,999",
+                                                                  "$50,000 to $74,999",
+                                                                  "$75,000 to $99,999",
+                                                                  "$100,000 to $ 124,999",
+                                                                  "$125,000 and more")))
+```
+
+
+## Question
+
+- Rerun the regression from above 
+- What is the reference category
+- Interpret the coefficient value and p-value on the "\$75,000 to \$99,999" level of income
+
+
+# Practice
+
+1. Using the country_indicators dataset, create an indicator variable for whether countries are in Western Asia OR Southern Asia
+2. Run an MLR of life expectancy as the dependent variable and child mortality and your indicator variable from above as the independent variables
+3. Interpret the intercept and the coefficient on your indicator variable. Is the indicator variable coefficient significant at the 5% level?
+
+
+
+# Interaction terms
+
+Here is the code from the lecture applied to the 2010 dataset, looking at whether the association between TFR and life expectancy differ based on whether country is in Developed Regions or not. First create a binary variable for region:
+
+```{r}
+country_ind_2010 <- country_ind |> filter(year==2010)
+country_ind_2010 <- country_ind_2010 |> 
+  mutate(dev_region = ifelse(region=="Developed regions", "yes", "no"))
+```
+
+Now run the regression:
+
+```{r}
+tfr_mod <- lm(tfr ~ life_expectancy + dev_region + life_expectancy*dev_region, data = country_ind_2010)
+summary(tfr_mod)
+```
+
+And visualize the results:
+
+```{r}
+ggplot(aes(life_expectancy, tfr, color = dev_region), data = country_ind_2010) + 
+  geom_point() + geom_smooth(method = "lm") + 
+  ggtitle("TFR versus life expectancy, by region") + 
+  ylab("TFR") + xlab("Life expectancy") + 
+  scale_color_brewer(name = "Developed region", palette = "Set1") 
+```
+
+## Questions
+
+- Repeat the above analysis but instead of life expectancy as an explanatory variable, use maternal mortality
+- Interpret the coefficients maternal mortality and the interaction term
+- When plotting the graph, add `scale_x_log10()` to the ggplot code. This displays the x axis on the log scale, making the patterns easier to read. 
