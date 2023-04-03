@@ -1,0 +1,47 @@
+---
+title: "Research project template"
+author: "Your name here"
+format: pdf
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+library(tidyverse)
+```
+
+# Introduction
+
+- Introduce research question and motivation
+
+# Data
+
+- briefly describe dataset
+
+## Descriptive statistics
+
+- any summary stats and graphs here
+
+# Model
+
+- Describe model. Here's an equation to get you started (add more terms if required):
+
+$$
+Y_i = \beta_0 + \beta_1X_{i1} + \beta_2X_{i2} + ...
+$$
+
+where
+
+- $Y_i =$ ...
+- $X_{i1} =$ ...
+- $X_{i2} =$ ...
+
+# Results
+
+Discuss results here, including coefficient interpretation and anything else you want. 
+
+# Discussion
+
+- Including limitations, future work?
