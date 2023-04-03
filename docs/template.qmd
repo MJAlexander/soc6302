@@ -1,7 +1,8 @@
 ---
-title: "Research project template"
+title: "Research project template (change title to be something relevant to your project)"
 author: "Your name here"
 format: pdf
+number-sections: true
 execute:
   echo: false
   warning: false
@@ -14,19 +15,44 @@ library(tidyverse)
 
 # Introduction
 
-- Introduce research question and motivation
+This section should include
+
+- A statement of your research question
+- Why it is important / interesting
+- Any other factors/variables beyond those you are most interested in that may affect the relationship
+
+For this section and in general for the whole report, it should be written like a mini research paper. So instead of just stating your research question, try to introduce the topic in a conversational way. 
 
 # Data
 
-- briefly describe dataset
+
+This section should include a description of the following:
+
+- A brief sentence explaining the data set you are using
+- Whether you subsetted to only include certain respondents
+- The number of respondents included in your analysis (remember those with missing values are dropped from a regression)
+- The variables in the data set you are using
+- Any other variables you created
+
 
 ## Descriptive statistics
 
-- any summary stats and graphs here
+This section should include any summary statistics, graphs or tables that 
+
+- describe the characteristics of your dataset, and
+- illustrate the relationship between variables that are related to your research question
+
+Please describe and interpret your EDA with words accompanying any output. 
+
 
 # Model
 
-- Describe model. Here's an equation to get you started (add more terms if required):
+- Describe the statistical method you are using to answer your research question
+- What is the response variable? What are the explanatory variables?
+- Why is this method appropriate for the research question?
+
+
+Here's an equation to get you started (add more terms if required):
 
 $$
 Y_i = \beta_0 + \beta_1X_{i1} + \beta_2X_{i2} + ...
@@ -44,4 +70,6 @@ Discuss results here, including coefficient interpretation and anything else you
 
 # Discussion
 
-- Including limitations, future work?
+- Discuss results as they relate to your research question
+- Were results surprising or expected?
+- Brief discussion about potential future work / additional variables that may be useful
